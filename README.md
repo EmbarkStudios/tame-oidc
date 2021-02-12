@@ -1,4 +1,4 @@
-# tame-oidc
+# 🧬 tame-oidc
 
 A very tame `OIDC` client based on `tame-oauth`.
 
