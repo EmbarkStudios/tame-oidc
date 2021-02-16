@@ -11,7 +11,7 @@ use tame_oidc::provider::JWKS;
 use tame_oidc::{oidc, provider};
 
 fn http_status_ok() -> String {
-    format!("HTTP/1.1 200 OK\r\n\r\n")
+    "HTTP/1.1 200 OK\r\n\r\n".to_string()
 }
 
 fn handle_connection(mut stream: TcpStream) -> Option<String> {
@@ -22,22 +22,13 @@ fn handle_connection(mut stream: TcpStream) -> Option<String> {
     let query_params = request.split_whitespace().nth(1).unwrap();
     let url = Url::parse(&("http://127.0.0.1:8000".to_string() + query_params)).unwrap();
 
-    // Extract the `code` query param and value
-    let code_pair = url.query_pairs().find(|pair| {
-        let &(ref key, _) = pair;
-        key == "code"
-    });
-
     stream.write_all(http_status_ok().as_bytes()).unwrap();
     stream.flush().unwrap();
 
-    return match code_pair {
-        Some(cp) => {
-            let (_, code) = cp;
-            Some(code.to_string())
-        }
-        _ => None,
-    };
+    // Extract the `code` query param and value
+    url.query_pairs()
+        .find(|(key, _)| key == "code")
+        .map(|(_, code)| code.to_string())
 }
 
 /// Spins up a listener on port, waits for any request from
