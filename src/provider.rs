@@ -56,7 +56,7 @@ pub fn token_data(token: String, jwk: &JWK) -> jsonwebtoken::errors::Result<Toke
 pub fn well_known(issuer: String) -> Result<http::Request<()>, tame_oauth::Error> {
     let well_known_uri = format!(
         "{}/.well-known/openid-configuration",
-        issuer.trim_end_matches("/")
+        issuer.trim_end_matches('/')
     );
 
     let request = http::Request::builder()
