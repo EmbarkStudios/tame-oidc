@@ -28,7 +28,7 @@ fn handle_connection(mut stream: TcpStream) -> Option<String> {
         key == "code"
     });
 
-    stream.write(http_status_ok().as_bytes()).unwrap();
+    stream.write_all(http_status_ok().as_bytes()).unwrap();
     stream.flush().unwrap();
 
     return match code_pair {
