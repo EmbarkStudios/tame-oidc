@@ -88,13 +88,8 @@ pub fn jwks(uri: String) -> http::Request<()> {
 
 #[cfg(test)]
 mod test {
-    use http::Request;
-    use jsonwebtoken::errors::{Error, ErrorKind};
 
-    use crate::provider;
-
-    use super::*;
-
+    // TODO: test!
     #[test]
     fn well_known() {}
 }
