@@ -51,18 +51,18 @@ struct EmbarkTokenResponse {
 }
 
 pub fn exchange_token_request(
-    uri: String,
-    redirect_uri: String,
-    client_id: String,
-    client_secret: String,
-    auth_code: String,
+    uri: &str,
+    redirect_uri: &str,
+    client_id: &str,
+    client_secret: &str,
+    auth_code: &str,
 ) -> Request<Vec<u8>> {
     let body = Serializer::new(String::new())
-        .append_pair("client_id", &client_id)
-        .append_pair("client_secret", &client_secret)
-        .append_pair("redirect_uri", &redirect_uri)
+        .append_pair("client_id", client_id)
+        .append_pair("client_secret", client_secret)
+        .append_pair("redirect_uri", redirect_uri)
         .append_pair("grant_type", "authorization_code")
-        .append_pair("code", &auth_code)
+        .append_pair("code", auth_code)
         .finish();
 
     let req_body = Vec::from(body);

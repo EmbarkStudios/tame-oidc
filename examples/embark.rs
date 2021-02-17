@@ -112,9 +112,9 @@ fn resp_builder(response: &reqwest::Response) -> Builder {
 async fn main() {
     let http_client = reqwest::Client::new();
 
-    let issuer_domain = "https://example.com".to_string();
-    let client_secret = "SUPER_SECRET".to_string();
-    let client_id = "CLIENT_ID".to_string();
+    let issuer_domain = "https://example.com";
+    let client_secret = "SUPER_SECRET";
+    let client_id = "CLIENT_ID";
     let redirect_uri = "127.0.0.1:8000";
 
     // Fetch and instantiate a provider using a `well-known` uri from an issuer
@@ -131,14 +131,14 @@ async fn main() {
     println!("Listener closed down");
     println!("Final code {}", auth_code);
 
-    // // 3. User now has 2 minutes to swap the auth code for an Embark Access token.
-    // // Make a `POST` request to the auth service /oauth2/token
+    // 3. User now has 2 minutes to swap the auth code for an Embark Access token.
+    // Make a `POST` request to the auth service /oauth2/token
     let exchange_request = oidc::exchange_token_request(
-        embark_provider.token_endpoint,
-        "http://127.0.0.1:8000".to_string(),
+        &embark_provider.token_endpoint,
+        "http://127.0.0.1:8000",
         client_id,
         client_secret,
-        auth_code,
+        &auth_code,
     );
     dbg!(&exchange_request);
 
@@ -153,7 +153,7 @@ async fn main() {
     let access_token = oidc::parse_token_response(token_response).unwrap();
 
     // Fetch the required JWKs
-    let jwks_req = provider::jwks(embark_provider.jwks_uri);
+    let jwks_req = provider::jwks(&embark_provider.jwks_uri);
     let jwks_res = http_builder_get(&http_client, jwks_req).await;
     let jwks_str = jwks_res.text().await.unwrap();
     let jwks_json = serde_json::from_str::<JWKS>(&jwks_str).unwrap();
