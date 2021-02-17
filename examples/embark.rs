@@ -1,9 +1,9 @@
-use std::io::prelude::*;
 use std::io::BufReader;
 use std::net::{TcpListener, TcpStream};
 use std::str;
+use std::{convert::TryInto, io::prelude::*};
 
-use http::response::Builder;
+use bytes::Bytes;
 use http::Request;
 use reqwest::Url;
 
@@ -50,62 +50,22 @@ async fn listener(redirect_uri: &str) -> String {
 }
 
 /// Return reqwest response
-async fn http_builder(
+async fn http_send<Body: Into<reqwest::Body>>(
     http_client: &reqwest::Client,
-    request: Request<Vec<u8>>,
+    request: Request<Body>,
 ) -> reqwest::Response {
-    let (parts, body) = request.into_parts();
-    let uri = parts.uri.to_string();
-
-    let builder = match parts.method {
-        http::Method::GET => http_client.get(&uri),
-        http::Method::POST => http_client.post(&uri),
-        http::Method::DELETE => http_client.delete(&uri),
-        http::Method::PUT => http_client.put(&uri),
-        method => unimplemented!("{} not implemented", method),
-    };
-    let request = builder.headers(parts.headers).body(body).build().unwrap();
-
-    http_client.execute(request).await.unwrap()
+    http_client
+        .execute(request.try_into().unwrap())
+        .await
+        .unwrap()
 }
 
-///
-/// Return reqwest response
-async fn http_builder_get(
-    http_client: &reqwest::Client,
-    request: Request<()>,
-) -> reqwest::Response {
-    let (parts, _) = request.into_parts();
-    let uri = parts.uri.to_string();
-
-    let builder = match parts.method {
-        http::Method::GET => http_client.get(&uri),
-        http::Method::POST => http_client.post(&uri),
-        http::Method::DELETE => http_client.delete(&uri),
-        http::Method::PUT => http_client.put(&uri),
-        method => unimplemented!("{} not implemented", method),
-    };
-
-    let request = builder.headers(parts.headers).build().unwrap();
-    http_client.execute(request).await.unwrap()
-}
-
-fn resp_builder(response: &reqwest::Response) -> Builder {
+async fn convert_http_response(mut response: reqwest::Response) -> http::Response<Bytes> {
     let mut builder = http::Response::builder()
         .status(response.status())
         .version(response.version());
-
-    let headers = builder.headers_mut().unwrap();
-
-    // Unfortunately http doesn't expose a way to just use
-    // an existing HeaderMap, so we have to copy them :(
-    headers.extend(
-        response
-            .headers()
-            .into_iter()
-            .map(|(k, v)| (k.clone(), v.clone())),
-    );
-    builder
+    std::mem::swap(builder.headers_mut().unwrap(), response.headers_mut());
+    builder.body(response.bytes().await.unwrap()).unwrap()
 }
 
 #[tokio::main]
@@ -119,7 +79,7 @@ async fn main() {
 
     // Fetch and instantiate a provider using a `well-known` uri from an issuer
     let p_req = provider::well_known(issuer_domain).unwrap();
-    let response = http_builder_get(&http_client, p_req).await;
+    let response = http_send(&http_client, p_req).await;
     let provider_str = response.text().await.unwrap();
     let embark_provider = provider::from_str(&provider_str);
     dbg!(&embark_provider);
@@ -142,19 +102,17 @@ async fn main() {
     );
     dbg!(&exchange_request);
 
-    let response = http_builder(&http_client, exchange_request).await;
+    let response = http_send(&http_client, exchange_request).await;
     dbg!(&response);
     println!(" ========= ");
 
     // construct the response
-    let builder = resp_builder(&response);
-    let buffer = response.bytes().await.unwrap();
-    let token_response = builder.body(buffer).unwrap();
+    let token_response = convert_http_response(response).await;
     let access_token = oidc::parse_token_response(token_response).unwrap();
 
     // Fetch the required JWKs
     let jwks_req = provider::jwks(&embark_provider.jwks_uri);
-    let jwks_res = http_builder_get(&http_client, jwks_req).await;
+    let jwks_res = http_send(&http_client, jwks_req).await;
     let jwks_str = jwks_res.text().await.unwrap();
     let jwks_json = serde_json::from_str::<JWKS>(&jwks_str).unwrap();
     dbg!(&jwks_json);
