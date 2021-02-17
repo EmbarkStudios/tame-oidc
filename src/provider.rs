@@ -53,7 +53,7 @@ pub fn token_data(token: String, jwk: &JWK) -> jsonwebtoken::errors::Result<Toke
 }
 
 /// Return a Request object for validating a well-known OIDC issuer
-pub fn well_known(issuer: String) -> Result<http::Request<()>, tame_oauth::Error> {
+pub fn well_known(issuer: &str) -> Result<http::Request<()>, tame_oauth::Error> {
     let well_known_uri = format!(
         "{}/.well-known/openid-configuration",
         issuer.trim_end_matches('/')
@@ -74,7 +74,7 @@ pub fn well_known(issuer: String) -> Result<http::Request<()>, tame_oauth::Error
 ///
 /// Return a Request object for fetching a JWKS definition
 /// Basically just a HTTP GET function.
-pub fn jwks(uri: String) -> http::Request<()> {
+pub fn jwks(uri: &str) -> http::Request<()> {
     http::Request::builder()
         .method("GET")
         .uri(uri)
