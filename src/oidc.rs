@@ -1,8 +1,6 @@
+use http::{header::CONTENT_TYPE, Request};
+use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
-
-use http::Request;
-use serde::{Deserialize, Serialize};
-use tame_oauth::{Error, Token};
 
 /// This is the schema of the server's response.
 #[derive(serde::Deserialize, Debug)]
@@ -15,6 +13,33 @@ struct TokenResponse {
     expires_in: i64,
     /// The scope used for this token - most often `openid`
     scope: String,
+    /// A JSON Web Token that contains information about an authentication event
+    /// and claims about the authenticated user.
+    id_token: Option<String>,
+    /// An opaque refresh token. This is returned if the offline_access scope is
+    /// granted.
+    refresh_token: Option<String>,
+}
+
+/// This is the schema of the server's response.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Token {
+    /// The actual token
+    pub access_token: String,
+    /// The token type - most often `bearer`
+    pub token_type: String,
+    /// The time until the token expires and a new one needs to be requested
+    pub expires_in: i64,
+    /// The time until the token expires and a new one needs to be requested
+    pub expires_in_timestamp: i64,
+    /// The scope used for this token - most often `openid`
+    pub scope: String,
+    /// A JSON Web Token that contains information about an authentication event
+    /// and claims about the authenticated user.
+    pub id_token: Option<String>,
+    /// An opaque refresh token. This is returned if the offline_access scope is
+    /// granted.
+    pub refresh_token: Option<String>,
 }
 
 impl Into<Token> for TokenResponse {
@@ -24,30 +49,13 @@ impl Into<Token> for TokenResponse {
         Token {
             access_token: self.access_token,
             token_type: self.token_type,
-            refresh_token: String::new(),
-            expires_in: Some(self.expires_in),
-            expires_in_timestamp: Some(expires_ts),
+            refresh_token: self.refresh_token,
+            expires_in: self.expires_in,
+            expires_in_timestamp: expires_ts,
+            scope: self.scope,
+            id_token: self.id_token,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct EmbarkTokenExchangeRequest {
-    client_id: String,
-    client_secret: String,
-    redirect_uri: String,
-    grant_type: String,
-    code: String,
-}
-
-/// Server response schema
-#[derive(Serialize, Deserialize, Debug)]
-struct EmbarkTokenResponse {
-    id_token: String,
-    access_token: String,
-    token_type: String,
-    scope: String,
-    expires_in: i64,
 }
 
 pub fn exchange_token_request(
@@ -70,10 +78,7 @@ pub fn exchange_token_request(
     Request::builder()
         .method("POST")
         .uri(uri)
-        .header(
-            http::header::CONTENT_TYPE,
-            "application/x-www-form-urlencoded",
-        )
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(req_body)
         .unwrap()
 }
@@ -82,7 +87,6 @@ pub fn exchange_token_request(
 /// method to deserialize the token and store it in the cache so that
 /// future API requests don't have to retrieve a new token, until it
 /// expires.
-/// NOTE: Copied directly from `tame-oauth` - could be made standalone from `ServiceAccountAccess`
 pub fn parse_token_response<S>(response: http::Response<S>) -> Result<Token, Error>
 where
     S: AsRef<[u8]>,
@@ -90,17 +94,6 @@ where
     let (parts, body) = response.into_parts();
 
     if !parts.status.is_success() {
-        if parts
-            .headers
-            .get(http::header::CONTENT_TYPE)
-            .and_then(|ct| ct.to_str().ok())
-            == Some("application/json; charset=utf-8")
-        {
-            // if let Ok(auth_error) = serde_json::from_slice::<tame_oauth::AuthError>(body_bytes) {
-            //     return Err(Error::AuthError(auth_error));
-            // }
-        }
-
         return Err(Error::HttpStatus(parts.status));
     }
 

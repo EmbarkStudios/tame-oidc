@@ -1,5 +1,6 @@
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Provider {
@@ -40,9 +41,32 @@ pub struct Claims {
     sub: String,
 }
 
+#[derive(Error, Debug)]
+pub enum TokenDataError {
+    #[error("No JWKs provided to decode token")]
+    NoJWKs,
+
+    #[error(transparent)]
+    JWTDecode(#[from] jsonwebtoken::errors::Error),
+}
+
 /// Deserialize token data
 /// Returns either a token or jsonwebtoken error
-pub fn token_data(token: String, jwk: &JWK) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
+pub fn token_data(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
+    let mut error = None;
+    for jwk in jwks {
+        match try_token_data(token, &jwk) {
+            Ok(data) => return Ok(data),
+            Err(err) => error = Some(err),
+        };
+    }
+    error
+        .map(TokenDataError::JWTDecode)
+        .map(Err)
+        .unwrap_or(Err(TokenDataError::NoJWKs))
+}
+
+fn try_token_data(token: &str, jwk: &JWK) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
     let exponent = &jwk.exponent.to_string();
     let rsa_component = &jwk.key.to_string();
     decode::<Claims>(
