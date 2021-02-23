@@ -72,13 +72,13 @@ async fn convert_http_response(mut response: reqwest::Response) -> http::Respons
 async fn main() {
     let http_client = reqwest::Client::new();
 
-    let issuer_domain = "https://example.com";
-    let client_secret = "SUPER_SECRET";
-    let client_id = "CLIENT_ID";
+    let issuer_domain = std::env::var("ISSUER_DOMAIN").unwrap();
+    let client_secret = std::env::var("CLIENT_SECRET").unwrap();
+    let client_id = std::env::var("CLIENT_ID").unwrap();
     let redirect_uri = "127.0.0.1:8000";
 
     // Fetch and instantiate a provider using a `well-known` uri from an issuer
-    let p_req = provider::well_known(issuer_domain).unwrap();
+    let p_req = provider::well_known(&issuer_domain).unwrap();
     let response = http_send(&http_client, p_req).await;
     let provider_str = response.text().await.unwrap();
     let embark_provider = provider::from_str(&provider_str);
@@ -96,8 +96,8 @@ async fn main() {
     let exchange_request = oidc::exchange_token_request(
         &embark_provider.token_endpoint,
         "http://127.0.0.1:8000",
-        client_id,
-        client_secret,
+        &client_id,
+        &client_secret,
         &auth_code,
     );
     dbg!(&exchange_request);
@@ -117,7 +117,6 @@ async fn main() {
     let jwks_json = serde_json::from_str::<JWKS>(&jwks_str).unwrap();
     dbg!(&jwks_json);
 
-    let token_data =
-        provider::token_data(access_token.access_token.to_string(), &jwks_json.keys[1]);
+    let token_data = provider::token_data(&access_token.access_token, &jwks_json.keys);
     dbg!(&token_data);
 }
