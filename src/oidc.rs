@@ -111,7 +111,6 @@ pub fn refresh_token_request(
     let body = Serializer::new(String::new())
         .append_pair("client_id", client_id)
         .append_pair("client_secret", client_secret)
-        // .append_pair("redirect_uri", redirect_uri)
         .append_pair("grant_type", "refresh_token")
         .append_pair("refresh_token", refresh_token)
         .finish();
