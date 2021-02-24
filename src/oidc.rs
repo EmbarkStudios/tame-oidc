@@ -74,7 +74,6 @@ pub fn exchange_token_request(
         .finish();
 
     let req_body = Vec::from(body);
-    // let body_str = serde_json::to_string(&auth_body).unwrap();
     Request::builder()
         .method("POST")
         .uri(uri)
@@ -101,4 +100,27 @@ where
     let token: Token = token_res.into();
 
     Ok(token)
+}
+
+pub fn refresh_token_request(
+    uri: &str,
+    client_id: &str,
+    client_secret: &str,
+    refresh_token: &str,
+) -> Request<Vec<u8>> {
+    let body = Serializer::new(String::new())
+        .append_pair("client_id", client_id)
+        .append_pair("client_secret", client_secret)
+        // .append_pair("redirect_uri", redirect_uri)
+        .append_pair("grant_type", "refresh_token")
+        .append_pair("refresh_token", refresh_token)
+        .finish();
+
+    let req_body = Vec::from(body);
+    Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(req_body)
+        .unwrap()
 }
