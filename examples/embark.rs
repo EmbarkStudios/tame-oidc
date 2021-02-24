@@ -110,7 +110,7 @@ async fn main() {
     let token_response = convert_http_response(response).await;
     let access_token = oidc::parse_token_response(token_response).unwrap();
 
-    // Fetch the required JWKs
+    // 4. Fetch the required JWKs
     let jwks_req = provider::jwks(&embark_provider.jwks_uri);
     let jwks_res = http_send(&http_client, jwks_req).await;
     let jwks_str = jwks_res.text().await.unwrap();
@@ -119,4 +119,19 @@ async fn main() {
 
     let token_data = provider::token_data(&access_token.access_token, &jwks_json.keys);
     dbg!(&token_data);
+    dbg!(&access_token);
+    let refresh_token = access_token.refresh_token.unwrap();
+
+    // 5. Refresh token
+    let refresh_request = oidc::refresh_token_request(
+        &embark_provider.token_endpoint,
+        &client_id,
+        &client_secret,
+        &refresh_token,
+    );
+    let response = http_send(&http_client, refresh_request).await;
+    let refresh_response = convert_http_response(response).await;
+    dbg!(&refresh_response);
+    let new_refresh_token = oidc::parse_token_response(refresh_response).unwrap();
+    dbg!(&new_refresh_token);
 }
