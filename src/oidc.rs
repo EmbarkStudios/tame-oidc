@@ -1,4 +1,6 @@
-use http::{header::CONTENT_TYPE, Request};
+use crate::errors::RequestError;
+use http::{header::CONTENT_TYPE, Request, Uri};
+use std::convert::TryInto;
 use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
 
@@ -58,28 +60,35 @@ impl Into<Token> for TokenResponse {
     }
 }
 
-pub fn exchange_token_request(
-    uri: &str,
-    redirect_uri: &str,
+pub fn exchange_token_request<ReqUri, RedirectUri>(
+    uri: ReqUri,
+    redirect_uri: RedirectUri,
     client_id: &str,
     client_secret: &str,
     auth_code: &str,
-) -> Request<Vec<u8>> {
+) -> Result<Request<Vec<u8>>, RequestError>
+where
+    ReqUri: TryInto<Uri>,
+    RedirectUri: TryInto<Uri>,
+{
     let body = Serializer::new(String::new())
         .append_pair("client_id", client_id)
         .append_pair("client_secret", client_secret)
-        .append_pair("redirect_uri", redirect_uri)
+        .append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string())
         .append_pair("grant_type", "authorization_code")
         .append_pair("code", auth_code)
         .finish();
 
     let req_body = Vec::from(body);
-    Request::builder()
+    Ok(Request::builder()
         .method("POST")
-        .uri(uri)
+        .uri(into_uri(uri)?)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .body(req_body)
-        .unwrap()
+        .body(req_body)?)
+}
+
+pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
+    uri.try_into().map_err(|_| RequestError::InvalidUri)
 }
 
 /// Once a response has been received for a token request, call this
@@ -102,12 +111,15 @@ where
     Ok(token)
 }
 
-pub fn refresh_token_request(
-    uri: &str,
+pub fn refresh_token_request<ReqUri>(
+    uri: ReqUri,
     client_id: &str,
     client_secret: &str,
     refresh_token: &str,
-) -> Request<Vec<u8>> {
+) -> Result<Request<Vec<u8>>, RequestError>
+where
+    ReqUri: TryInto<Uri>,
+{
     let body = Serializer::new(String::new())
         .append_pair("client_id", client_id)
         .append_pair("client_secret", client_secret)
@@ -116,10 +128,9 @@ pub fn refresh_token_request(
         .finish();
 
     let req_body = Vec::from(body);
-    Request::builder()
+    Ok(Request::builder()
         .method("POST")
-        .uri(uri)
+        .uri(into_uri(uri)?)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .body(req_body)
-        .unwrap()
+        .body(req_body)?)
 }
