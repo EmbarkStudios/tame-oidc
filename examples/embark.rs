@@ -99,7 +99,8 @@ async fn main() {
         &client_id,
         &client_secret,
         &auth_code,
-    );
+    )
+    .unwrap();
     dbg!(&exchange_request);
 
     let response = http_send(&http_client, exchange_request).await;
@@ -111,7 +112,7 @@ async fn main() {
     let access_token = oidc::parse_token_response(token_response).unwrap();
 
     // 4. Fetch the required JWKs
-    let jwks_req = provider::jwks(&embark_provider.jwks_uri);
+    let jwks_req = provider::jwks(&embark_provider.jwks_uri).unwrap();
     let jwks_res = http_send(&http_client, jwks_req).await;
     let jwks_str = jwks_res.text().await.unwrap();
     let jwks_json = serde_json::from_str::<JWKS>(&jwks_str).unwrap();
@@ -128,7 +129,8 @@ async fn main() {
         &client_id,
         &client_secret,
         &refresh_token,
-    );
+    )
+    .unwrap();
     let response = http_send(&http_client, refresh_request).await;
     let refresh_response = convert_http_response(response).await;
     dbg!(&refresh_response);

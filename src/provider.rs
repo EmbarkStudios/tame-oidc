@@ -1,17 +1,25 @@
+use crate::{
+    errors::{RequestError, TokenDataError},
+    oidc::into_uri,
+};
+use http::Uri;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use std::convert::TryInto;
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Provider {
-    issuer: String,
-    pub authorization_endpoint: String,
-    pub token_endpoint: String,
-    pub jwks_uri: String,
-    scopes_supported: Vec<String>,
-    response_types_supported: Vec<String>,
-    claims_supported: Vec<String>,
-    grant_types_supported: Vec<String>,
+    pub issuer: String,
+    #[serde(with = "crate::deserialize_uri")]
+    pub authorization_endpoint: Uri,
+    #[serde(with = "crate::deserialize_uri")]
+    pub token_endpoint: Uri,
+    #[serde(with = "crate::deserialize_uri")]
+    pub jwks_uri: Uri,
+    pub scopes_supported: Vec<String>,
+    pub response_types_supported: Vec<String>,
+    pub claims_supported: Vec<String>,
+    pub grant_types_supported: Vec<String>,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -39,15 +47,6 @@ pub fn from_str(data: &str) -> Provider {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     sub: String,
-}
-
-#[derive(Error, Debug)]
-pub enum TokenDataError {
-    #[error("No JWKs provided to decode token")]
-    NoJWKs,
-
-    #[error(transparent)]
-    JWTDecode(#[from] jsonwebtoken::errors::Error),
 }
 
 /// Deserialize token data
@@ -86,34 +85,38 @@ pub fn well_known(issuer: &str) -> Result<http::Request<&'static str>, tame_oaut
     let request = http::Request::builder()
         .method("GET")
         .uri(&well_known_uri)
-        .header(
-            http::header::CONTENT_TYPE,
-            "application/x-www-form-urlencoded",
-        )
         .body("")?;
 
     Ok(request)
 }
 
-///
 /// Return a Request object for fetching a JWKS definition
 /// Basically just a HTTP GET function.
-pub fn jwks(uri: &str) -> http::Request<&'static str> {
-    http::Request::builder()
+pub fn jwks<ReqUri: TryInto<Uri>>(
+    uri: ReqUri,
+) -> Result<http::Request<&'static str>, RequestError> {
+    Ok(http::Request::builder()
         .method("GET")
-        .uri(uri)
-        .header(
-            http::header::CONTENT_TYPE,
-            "application/x-www-form-urlencoded",
-        )
-        .body("")
-        .unwrap()
+        .uri(into_uri(uri)?)
+        .body("")?)
 }
 
 #[cfg(test)]
 mod test {
 
-    // TODO: test!
+    use http::{Method, Uri};
+
+    use super::*;
+
     #[test]
-    fn well_known() {}
+    fn well_known_req() {
+        let req = well_known("https://issuer.example.com").unwrap();
+        assert_eq!(req.method(), Method::GET);
+        assert_eq!(
+            req.uri(),
+            &"https://issuer.example.com/.well-known/openid-configuration"
+                .parse::<Uri>()
+                .unwrap()
+        );
+    }
 }
