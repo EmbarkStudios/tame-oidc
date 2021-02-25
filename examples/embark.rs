@@ -1,14 +1,16 @@
-use std::io::BufReader;
-use std::net::{TcpListener, TcpStream};
-use std::str;
-use std::{convert::TryInto, io::prelude::*};
-
 use bytes::Bytes;
 use http::Request;
 use reqwest::Url;
-
-use tame_oidc::provider::JWKS;
-use tame_oidc::{oidc, provider};
+use std::{
+    convert::TryInto,
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+    str,
+};
+use tame_oidc::{
+    oidc::Token,
+    provider::{self, Provider, JWKS},
+};
 
 fn http_status_ok() -> String {
     "HTTP/1.1 200 OK\r\n\r\n".to_string()
@@ -53,14 +55,13 @@ async fn listener(redirect_uri: &str) -> String {
 async fn http_send<Body: Into<reqwest::Body>>(
     http_client: &reqwest::Client,
     request: Request<Body>,
-) -> reqwest::Response {
-    http_client
+) -> http::Response<Bytes> {
+    // Make the request
+    let mut response = http_client
         .execute(request.try_into().unwrap())
         .await
-        .unwrap()
-}
-
-async fn convert_http_response(mut response: reqwest::Response) -> http::Response<Bytes> {
+        .unwrap();
+    // Convert to http::Response
     let mut builder = http::Response::builder()
         .status(response.status())
         .version(response.version());
@@ -78,11 +79,10 @@ async fn main() {
     let redirect_uri = "127.0.0.1:8000";
 
     // Fetch and instantiate a provider using a `well-known` uri from an issuer
-    let p_req = provider::well_known(&issuer_domain).unwrap();
-    let response = http_send(&http_client, p_req).await;
-    let provider_str = response.text().await.unwrap();
-    let embark_provider = provider::from_str(&provider_str);
-    dbg!(&embark_provider);
+    let request = provider::well_known(&issuer_domain).unwrap();
+    let response = http_send(&http_client, request).await;
+    let provider = Provider::from_response(response).unwrap();
+    dbg!(&provider);
 
     // 1. Authenticate through web browser
     // user goes to embark auth url in browser
@@ -93,14 +93,9 @@ async fn main() {
 
     // 3. User now has 2 minutes to swap the auth code for an Embark Access token.
     // Make a `POST` request to the auth service /oauth2/token
-    let exchange_request = oidc::exchange_token_request(
-        &embark_provider.token_endpoint,
-        "http://127.0.0.1:8000",
-        &client_id,
-        &client_secret,
-        &auth_code,
-    )
-    .unwrap();
+    let exchange_request = provider
+        .exchange_token_request(redirect_uri, &client_id, &client_secret, &auth_code)
+        .unwrap();
     dbg!(&exchange_request);
 
     let response = http_send(&http_client, exchange_request).await;
@@ -108,32 +103,24 @@ async fn main() {
     println!(" ========= ");
 
     // construct the response
-    let token_response = convert_http_response(response).await;
-    let access_token = oidc::parse_token_response(token_response).unwrap();
+    let access_token = Token::from_response(response).unwrap();
 
     // 4. Fetch the required JWKs
-    let jwks_req = provider::jwks(&embark_provider.jwks_uri).unwrap();
-    let jwks_res = http_send(&http_client, jwks_req).await;
-    let jwks_str = jwks_res.text().await.unwrap();
-    let jwks_json = serde_json::from_str::<JWKS>(&jwks_str).unwrap();
-    dbg!(&jwks_json);
+    let request = provider.jwks_request().unwrap();
+    let response = http_send(&http_client, request).await;
+    let jwks = JWKS::from_response(response).unwrap();
+    dbg!(&jwks);
 
-    let token_data = provider::token_data(&access_token.access_token, &jwks_json.keys);
+    let token_data = provider::token_data(&access_token.access_token, &jwks.keys);
     dbg!(&token_data);
     dbg!(&access_token);
     let refresh_token = access_token.refresh_token.unwrap();
 
     // 5. Refresh token
-    let refresh_request = oidc::refresh_token_request(
-        &embark_provider.token_endpoint,
-        &client_id,
-        &client_secret,
-        &refresh_token,
-    )
-    .unwrap();
-    let response = http_send(&http_client, refresh_request).await;
-    let refresh_response = convert_http_response(response).await;
-    dbg!(&refresh_response);
-    let new_refresh_token = oidc::parse_token_response(refresh_response).unwrap();
+    let request = provider
+        .refresh_token_request(&client_id, &client_secret, &refresh_token)
+        .unwrap();
+    let response = http_send(&http_client, request).await;
+    let new_refresh_token = Token::from_response(response).unwrap();
     dbg!(&new_refresh_token);
 }

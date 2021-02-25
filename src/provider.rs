@@ -1,8 +1,8 @@
 use crate::{
     errors::{RequestError, TokenDataError},
-    oidc::into_uri,
+    oidc::{exchange_token_request, into_uri, refresh_token_request},
 };
-use http::Uri;
+use http::{Request, Uri};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -22,6 +22,57 @@ pub struct Provider {
     pub grant_types_supported: Vec<String>,
 }
 
+impl Provider {
+    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
+    where
+        S: AsRef<[u8]>,
+    {
+        let (parts, body) = response.into_parts();
+        if !parts.status.is_success() {
+            return Err(tame_oauth::Error::HttpStatus(parts.status));
+        }
+
+        Ok(serde_json::from_slice(body.as_ref())?)
+    }
+
+    pub fn exchange_token_request<RedirectUri>(
+        &self,
+        redirect_uri: RedirectUri,
+        client_id: &str,
+        client_secret: &str,
+        auth_code: &str,
+    ) -> Result<Request<Vec<u8>>, RequestError>
+    where
+        RedirectUri: TryInto<Uri>,
+    {
+        exchange_token_request(
+            &self.token_endpoint,
+            redirect_uri,
+            client_id,
+            client_secret,
+            auth_code,
+        )
+    }
+
+    pub fn refresh_token_request(
+        &self,
+        client_id: &str,
+        client_secret: &str,
+        refresh_token: &str,
+    ) -> Result<Request<Vec<u8>>, RequestError> {
+        refresh_token_request(
+            &self.token_endpoint,
+            client_id,
+            client_secret,
+            refresh_token,
+        )
+    }
+
+    pub fn jwks_request(&self) -> Result<Request<&'static str>, RequestError> {
+        jwks(&self.jwks_uri)
+    }
+}
+
 #[derive(serde::Deserialize, Debug)]
 pub struct JWK {
     kty: String,
@@ -38,6 +89,19 @@ pub struct JWK {
 #[derive(serde::Deserialize, Debug)]
 pub struct JWKS {
     pub keys: Vec<JWK>,
+}
+
+impl JWKS {
+    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
+    where
+        S: AsRef<[u8]>,
+    {
+        let (parts, body) = response.into_parts();
+        if !parts.status.is_success() {
+            return Err(tame_oauth::Error::HttpStatus(parts.status));
+        }
+        Ok(serde_json::from_slice(body.as_ref())?)
+    }
 }
 
 pub fn from_str(data: &str) -> Provider {

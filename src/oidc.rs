@@ -44,6 +44,19 @@ pub struct Token {
     pub refresh_token: Option<String>,
 }
 
+impl Token {
+    /// Once a response has been received for a token request, call this
+    /// method to deserialize the token and store it in the cache so that
+    /// future API requests don't have to retrieve a new token, until it
+    /// expires.
+    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
+    where
+        S: AsRef<[u8]>,
+    {
+        parse_token_response(response)
+    }
+}
+
 impl Into<Token> for TokenResponse {
     fn into(self) -> Token {
         let expires_ts = chrono::Utc::now().timestamp() + self.expires_in;
