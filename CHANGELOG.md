@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Make `Claim.sub` public.
+- Implement `Clone` for `JWK`, `JWKS`, and `Claim`.
+
 ## [0.1.0] - 2021-02-26
 ### Changed
 - `provider::token_data` renamed to `provider::verify_token`.
