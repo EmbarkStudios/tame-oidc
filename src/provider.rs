@@ -108,9 +108,10 @@ pub fn from_str(data: &str) -> Provider {
     serde_json::from_str::<Provider>(&data).unwrap()
 }
 
+#[non_exhaustive]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    sub: String,
+    pub sub: String,
 }
 
 /// Deserialize token data
