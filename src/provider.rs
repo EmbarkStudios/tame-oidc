@@ -73,7 +73,7 @@ impl Provider {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct JWK {
     kty: String,
     alg: String,
@@ -86,7 +86,7 @@ pub struct JWK {
     pub key: String,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct JWKS {
     pub keys: Vec<JWK>,
 }
@@ -108,7 +108,7 @@ pub fn from_str(data: &str) -> Provider {
     serde_json::from_str::<Provider>(&data).unwrap()
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     sub: String,
 }
