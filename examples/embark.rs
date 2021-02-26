@@ -111,7 +111,7 @@ async fn main() {
     let jwks = JWKS::from_response(response).unwrap();
     dbg!(&jwks);
 
-    let token_data = provider::token_data(&access_token.access_token, &jwks.keys);
+    let token_data = provider::verify_token(&access_token.access_token, &jwks.keys);
     dbg!(&token_data);
     dbg!(&access_token);
     let refresh_token = access_token.refresh_token.unwrap();

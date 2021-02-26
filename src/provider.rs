@@ -115,7 +115,7 @@ pub struct Claims {
 
 /// Deserialize token data
 /// Returns either a token or jsonwebtoken error
-pub fn token_data(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
+pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
     let mut error = None;
     for jwk in jwks {
         match try_token_data(token, &jwk) {
