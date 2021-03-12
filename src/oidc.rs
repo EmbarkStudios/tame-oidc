@@ -4,9 +4,26 @@ use std::convert::TryInto;
 use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
 
+/// Request object sent in a token exchange request
+#[derive(serde::Deserialize, Debug)]
+pub struct TokenExchangeRequest {
+    /// Where to `POST` this request
+    pub uri: String,
+    /// Must be the same `redirect_uri` you used in the initial request
+    pub redirect_uri: String,
+    /// Identifies your application with the auth server
+    pub client_id: String,
+    /// The secret you don't share with anyone except the auth server
+    pub client_secret: Option<String>,
+    /// PKCE flow requires a code_verified to be present
+    pub code_verifier: Option<String>,
+    /// The auth_code you want to exchange for token(s)
+    pub auth_code: String,
+}
+
 /// This is the schema of the server's response.
 #[derive(serde::Deserialize, Debug)]
-struct TokenResponse {
+pub struct TokenExchangeResponse {
     /// The actual token
     access_token: String,
     /// The token type - most often `bearer`
@@ -57,7 +74,7 @@ impl Token {
     }
 }
 
-impl Into<Token> for TokenResponse {
+impl Into<Token> for TokenExchangeResponse {
     fn into(self) -> Token {
         let expires_ts = chrono::Utc::now().timestamp() + self.expires_in;
 
@@ -92,12 +109,34 @@ where
         .append_pair("code", auth_code)
         .finish();
 
-    let req_body = Vec::from(body);
-    Ok(Request::builder()
-        .method("POST")
-        .uri(into_uri(uri)?)
-        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .body(req_body)?)
+    http_post_req(body, uri)
+}
+
+/// Construct a token exchange request object
+/// For [PKCE flow](https://tools.ietf.org/html/rfc7636#section-4.1) pass in the `code_verifier`
+/// and omit the `client_secret`.
+///
+/// For [authorization code flow](https://auth0.com/docs/flows/authorization-code-flow) pass in
+/// `client_secret` and omit `code_verifier`.
+///
+pub fn pkce_exchange_token_request(
+    req: TokenExchangeRequest,
+) -> Result<Request<Vec<u8>>, RequestError> {
+    let mut serializer = Serializer::new(String::new());
+    serializer.append_pair("client_id", &req.client_id);
+    serializer.append_pair("redirect_uri", &into_uri(req.redirect_uri)?.to_string());
+    serializer.append_pair("grant_type", "authorization_code");
+    serializer.append_pair("code", &req.auth_code);
+
+    if req.client_secret.is_some() {
+        serializer.append_pair("client_secret", &req.client_secret.unwrap());
+    }
+    if req.code_verifier.is_some() {
+        serializer.append_pair("code_verifier", &req.code_verifier.unwrap());
+    }
+
+    let body = serializer.finish();
+    http_post_req(body, req.uri)
 }
 
 pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
@@ -118,7 +157,7 @@ where
         return Err(Error::HttpStatus(parts.status));
     }
 
-    let token_res: TokenResponse = serde_json::from_slice(body.as_ref())?;
+    let token_res: TokenExchangeResponse = serde_json::from_slice(body.as_ref())?;
     let token: Token = token_res.into();
 
     Ok(token)
@@ -140,6 +179,13 @@ where
         .append_pair("refresh_token", refresh_token)
         .finish();
 
+    http_post_req(body, uri)
+}
+
+fn http_post_req<ReqUri>(body: String, uri: ReqUri) -> Result<Request<Vec<u8>>, RequestError>
+where
+    ReqUri: TryInto<Uri>,
+{
     let req_body = Vec::from(body);
     Ok(Request::builder()
         .method("POST")
