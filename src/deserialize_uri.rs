@@ -12,7 +12,7 @@ impl<'de> de::Visitor<'de> for UriVisitor {
 
     fn visit_str<E: de::Error>(self, val: &str) -> Result<Self::Value, E> {
         val.parse()
-            .map_err(|_| de::Error::invalid_value(de::Unexpected::Str(val), &self))
+            .map_err(|_err| de::Error::invalid_value(de::Unexpected::Str(val), &self))
     }
 }
 

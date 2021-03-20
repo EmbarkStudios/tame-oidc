@@ -101,7 +101,7 @@ where
 }
 
 pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
-    uri.try_into().map_err(|_| RequestError::InvalidUri)
+    uri.try_into().map_err(|_err| RequestError::InvalidUri)
 }
 
 /// Once a response has been received for a token request, call this
