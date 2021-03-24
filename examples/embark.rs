@@ -48,7 +48,7 @@ async fn listener(redirect_uri: &str) -> String {
         };
     }
 
-    auth_code
+    auth_code.trim().to_string()
 }
 
 /// Return reqwest response
@@ -82,7 +82,6 @@ async fn main() {
     let request = provider::well_known(&issuer_domain).unwrap();
     let response = http_send(&http_client, request).await;
     let provider = Provider::from_response(response).unwrap();
-    dbg!(&provider);
 
     // 1. Authenticate through web browser
     // user goes to embark auth url in browser
@@ -94,13 +93,16 @@ async fn main() {
     // 3. User now has 2 minutes to swap the auth code for an Embark Access token.
     // Make a `POST` request to the auth service /oauth2/token
     let exchange_request = provider
-        .exchange_token_request(redirect_uri, &client_id, &client_secret, &auth_code)
+        .exchange_token_request(
+            redirect_uri,
+            &client_id,
+            &auth_code,
+            Some(&client_secret),
+            None,
+        )
         .unwrap();
-    dbg!(&exchange_request);
 
     let response = http_send(&http_client, exchange_request).await;
-    dbg!(&response);
-    println!(" ========= ");
 
     // construct the response
     let access_token = Token::from_response(response).unwrap();
@@ -109,7 +111,6 @@ async fn main() {
     let request = provider.jwks_request().unwrap();
     let response = http_send(&http_client, request).await;
     let jwks = JWKS::from_response(response).unwrap();
-    dbg!(&jwks);
 
     let token_data = provider::verify_token(&access_token.access_token, &jwks.keys);
     dbg!(&token_data);

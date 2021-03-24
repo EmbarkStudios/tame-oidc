@@ -5,7 +5,7 @@ use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
 
 /// Request object sent in a token exchange request
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct TokenExchangeRequest {
     /// Where to `POST` this request
     pub uri: String,
@@ -90,25 +90,41 @@ impl Into<Token> for TokenExchangeResponse {
     }
 }
 
+/// Construct a token exchange request object
+/// For [PKCE flow](https://tools.ietf.org/html/rfc7636#section-4.1) pass in the `code_verifier`
+/// and omit the `client_secret`.
+///
+/// For [authorization code flow](https://auth0.com/docs/flows/authorization-code-flow) pass in
+/// `client_secret` and omit `code_verifier`.
+///
+/// Also supports edge cases where i.e. a development machine requires both
+/// `client_secret` and `code_verifier`. Just pass in them both in such case.
 pub fn exchange_token_request<ReqUri, RedirectUri>(
     uri: ReqUri,
     redirect_uri: RedirectUri,
     client_id: &str,
-    client_secret: &str,
     auth_code: &str,
+    client_secret: Option<&str>,
+    code_verifier: Option<&str>,
 ) -> Result<Request<Vec<u8>>, RequestError>
 where
     ReqUri: TryInto<Uri>,
     RedirectUri: TryInto<Uri>,
 {
-    let body = Serializer::new(String::new())
-        .append_pair("client_id", client_id)
-        .append_pair("client_secret", client_secret)
-        .append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string())
-        .append_pair("grant_type", "authorization_code")
-        .append_pair("code", auth_code)
-        .finish();
+    let mut serializer = Serializer::new(String::new());
+    serializer.append_pair("client_id", client_id);
+    serializer.append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string());
+    serializer.append_pair("grant_type", "authorization_code");
+    serializer.append_pair("code", auth_code);
 
+    if let Some(cs) = client_secret {
+        serializer.append_pair("client_secret", &cs);
+    }
+    if let Some(cv) = code_verifier {
+        serializer.append_pair("code_verifier", &cv);
+    }
+
+    let body = serializer.finish();
     http_post_req(body, uri)
 }
 
@@ -119,25 +135,6 @@ where
 /// For [authorization code flow](https://auth0.com/docs/flows/authorization-code-flow) pass in
 /// `client_secret` and omit `code_verifier`.
 ///
-pub fn pkce_exchange_token_request(
-    req: TokenExchangeRequest,
-) -> Result<Request<Vec<u8>>, RequestError> {
-    let mut serializer = Serializer::new(String::new());
-    serializer.append_pair("client_id", &req.client_id);
-    serializer.append_pair("redirect_uri", &into_uri(req.redirect_uri)?.to_string());
-    serializer.append_pair("grant_type", "authorization_code");
-    serializer.append_pair("code", &req.auth_code);
-
-    if req.client_secret.is_some() {
-        serializer.append_pair("client_secret", &req.client_secret.unwrap());
-    }
-    if req.code_verifier.is_some() {
-        serializer.append_pair("code_verifier", &req.code_verifier.unwrap());
-    }
-
-    let body = serializer.finish();
-    http_post_req(body, req.uri)
-}
 
 pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
     uri.try_into().map_err(|_| RequestError::InvalidUri)
@@ -192,4 +189,34 @@ where
         .uri(into_uri(uri)?)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(req_body)?)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::str;
+
+    #[test]
+    fn pkce_flow_exchange() {
+        let request = exchange_token_request(
+            "https://www.example.com/",
+            "http://localhost:8000/",
+            "client_id",
+            "auth-code",
+            None,
+            Some("the_secret_code_verifier"),
+        )
+        .unwrap();
+
+        let body = str::from_utf8(&request.body()).unwrap();
+
+        // should not have client_secret parameter
+        assert_eq!(body.contains("client_secret"), false);
+
+        // should have code_verifier parameter
+        assert_eq!(
+            body.contains("code_verifier=the_secret_code_verifier"),
+            true
+        );
+    }
 }
