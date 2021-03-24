@@ -118,10 +118,10 @@ where
     serializer.append_pair("code", auth_code);
 
     if let Some(cs) = client_secret {
-        serializer.append_pair("client_secret", &cs);
+        serializer.append_pair("client_secret", cs);
     }
     if let Some(cv) = code_verifier {
-        serializer.append_pair("code_verifier", &cv);
+        serializer.append_pair("code_verifier", cv);
     }
 
     let body = serializer.finish();
