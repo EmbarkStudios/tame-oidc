@@ -4,26 +4,9 @@ use std::convert::TryInto;
 use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
 
-/// Request object sent in a token exchange request
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct TokenExchangeRequest {
-    /// Where to `POST` this request
-    pub uri: String,
-    /// Must be the same `redirect_uri` you used in the initial request
-    pub redirect_uri: String,
-    /// Identifies your application with the auth server
-    pub client_id: String,
-    /// The secret you don't share with anyone except the auth server
-    pub client_secret: Option<String>,
-    /// PKCE flow requires a code_verified to be present
-    pub code_verifier: Option<String>,
-    /// The auth_code you want to exchange for token(s)
-    pub auth_code: String,
-}
-
 /// This is the schema of the server's response.
 #[derive(serde::Deserialize, Debug)]
-pub struct TokenExchangeResponse {
+struct TokenExchangeResponse {
     /// The actual token
     access_token: String,
     /// The token type - most often `bearer`
@@ -128,14 +111,6 @@ where
     http_post_req(body, uri)
 }
 
-/// Construct a token exchange request object
-/// For [PKCE flow](https://tools.ietf.org/html/rfc7636#section-4.1) pass in the `code_verifier`
-/// and omit the `client_secret`.
-///
-/// For [authorization code flow](https://auth0.com/docs/flows/authorization-code-flow) pass in
-/// `client_secret` and omit `code_verifier`.
-///
-
 pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
     uri.try_into().map_err(|_err| RequestError::InvalidUri)
 }
@@ -208,7 +183,7 @@ mod test {
         )
         .unwrap();
 
-        let body = str::from_utf8(&request.body()).unwrap();
+        let body = str::from_utf8(request.body()).unwrap();
 
         // should not have client_secret parameter
         assert_eq!(body.contains("client_secret"), false);
