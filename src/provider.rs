@@ -107,7 +107,7 @@ impl JWKS {
 }
 
 pub fn from_str(data: &str) -> Provider {
-    serde_json::from_str::<Provider>(&data).unwrap()
+    serde_json::from_str::<Provider>(data).unwrap()
 }
 
 #[non_exhaustive]
@@ -121,7 +121,7 @@ pub struct Claims {
 pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
     let mut error = None;
     for jwk in jwks {
-        match try_token_data(token, &jwk) {
+        match try_token_data(token, jwk) {
             Ok(data) => return Ok(data),
             Err(err) => error = Some(err),
         };
@@ -133,10 +133,10 @@ pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, Toke
 }
 
 fn try_token_data(token: &str, jwk: &JWK) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
-    let exponent = &jwk.exponent.to_string();
-    let rsa_component = &jwk.key.to_string();
+    let exponent = &jwk.exponent;
+    let rsa_component = &jwk.key;
     decode::<Claims>(
-        &token,
+        token,
         &DecodingKey::from_rsa_components(rsa_component.as_str(), exponent.as_str()),
         &Validation::new(Algorithm::RS256),
     )
