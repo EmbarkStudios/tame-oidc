@@ -76,6 +76,7 @@ impl Provider {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct JWK {
     kty: String,
     alg: String,
@@ -89,10 +90,12 @@ pub struct JWK {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct JWKS {
     pub keys: Vec<JWK>,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 impl JWKS {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
     where
