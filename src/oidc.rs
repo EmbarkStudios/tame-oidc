@@ -57,18 +57,18 @@ impl Token {
     }
 }
 
-impl Into<Token> for TokenExchangeResponse {
-    fn into(self) -> Token {
-        let expires_ts = chrono::Utc::now().timestamp() + self.expires_in;
+impl From<TokenExchangeResponse> for Token {
+    fn from(t: TokenExchangeResponse) -> Token {
+        let expires_ts = chrono::Utc::now().timestamp() + t.expires_in;
 
         Token {
-            access_token: self.access_token,
-            token_type: self.token_type,
-            refresh_token: self.refresh_token,
-            expires_in: self.expires_in,
+            access_token: t.access_token,
+            token_type: t.token_type,
+            refresh_token: t.refresh_token,
+            expires_in: t.expires_in,
             expires_in_timestamp: expires_ts,
-            scope: self.scope,
-            id_token: self.id_token,
+            scope: t.scope,
+            id_token: t.id_token,
         }
     }
 }
