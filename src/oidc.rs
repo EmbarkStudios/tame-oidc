@@ -6,7 +6,7 @@ use url::form_urlencoded::Serializer;
 
 /// This is the schema of the server's response.
 #[derive(serde::Deserialize, Debug)]
-struct TokenResponse {
+struct TokenExchangeResponse {
     /// The actual token
     access_token: String,
     /// The token type - most often `bearer`
@@ -57,47 +57,58 @@ impl Token {
     }
 }
 
-impl Into<Token> for TokenResponse {
-    fn into(self) -> Token {
-        let expires_ts = chrono::Utc::now().timestamp() + self.expires_in;
+impl From<TokenExchangeResponse> for Token {
+    fn from(t: TokenExchangeResponse) -> Token {
+        let expires_ts = chrono::Utc::now().timestamp() + t.expires_in;
 
         Token {
-            access_token: self.access_token,
-            token_type: self.token_type,
-            refresh_token: self.refresh_token,
-            expires_in: self.expires_in,
+            access_token: t.access_token,
+            token_type: t.token_type,
+            refresh_token: t.refresh_token,
+            expires_in: t.expires_in,
             expires_in_timestamp: expires_ts,
-            scope: self.scope,
-            id_token: self.id_token,
+            scope: t.scope,
+            id_token: t.id_token,
         }
     }
 }
 
+/// Construct a token exchange request object
+/// For [PKCE flow](https://tools.ietf.org/html/rfc7636#section-4.1) pass in the `code_verifier`
+/// and omit the `client_secret`.
+///
+/// For [authorization code flow](https://auth0.com/docs/flows/authorization-code-flow) pass in
+/// `client_secret` and omit `code_verifier`.
+///
+/// Also supports edge cases where i.e. a development machine requires both
+/// `client_secret` and `code_verifier`. Just pass in them both in such case.
 pub fn exchange_token_request<ReqUri, RedirectUri>(
     uri: ReqUri,
     redirect_uri: RedirectUri,
     client_id: &str,
-    client_secret: &str,
     auth_code: &str,
+    client_secret: Option<&str>,
+    code_verifier: Option<&str>,
 ) -> Result<Request<Vec<u8>>, RequestError>
 where
     ReqUri: TryInto<Uri>,
     RedirectUri: TryInto<Uri>,
 {
-    let body = Serializer::new(String::new())
-        .append_pair("client_id", client_id)
-        .append_pair("client_secret", client_secret)
-        .append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string())
-        .append_pair("grant_type", "authorization_code")
-        .append_pair("code", auth_code)
-        .finish();
+    let mut serializer = Serializer::new(String::new());
+    serializer.append_pair("client_id", client_id);
+    serializer.append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string());
+    serializer.append_pair("grant_type", "authorization_code");
+    serializer.append_pair("code", auth_code);
 
-    let req_body = Vec::from(body);
-    Ok(Request::builder()
-        .method("POST")
-        .uri(into_uri(uri)?)
-        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .body(req_body)?)
+    if let Some(cs) = client_secret {
+        serializer.append_pair("client_secret", cs);
+    }
+    if let Some(cv) = code_verifier {
+        serializer.append_pair("code_verifier", cv);
+    }
+
+    let body = serializer.finish();
+    http_post_req(body, uri)
 }
 
 pub(crate) fn into_uri<U: TryInto<Uri>>(uri: U) -> Result<Uri, RequestError> {
@@ -118,7 +129,7 @@ where
         return Err(Error::HttpStatus(parts.status));
     }
 
-    let token_res: TokenResponse = serde_json::from_slice(body.as_ref())?;
+    let token_res: TokenExchangeResponse = serde_json::from_slice(body.as_ref())?;
     let token: Token = token_res.into();
 
     Ok(token)
@@ -140,10 +151,47 @@ where
         .append_pair("refresh_token", refresh_token)
         .finish();
 
+    http_post_req(body, uri)
+}
+
+fn http_post_req<ReqUri>(body: String, uri: ReqUri) -> Result<Request<Vec<u8>>, RequestError>
+where
+    ReqUri: TryInto<Uri>,
+{
     let req_body = Vec::from(body);
     Ok(Request::builder()
         .method("POST")
         .uri(into_uri(uri)?)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .body(req_body)?)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::str;
+
+    #[test]
+    fn pkce_flow_exchange() {
+        let request = exchange_token_request(
+            "https://www.example.com/",
+            "http://localhost:8000/",
+            "client_id",
+            "auth-code",
+            None,
+            Some("the_secret_code_verifier"),
+        )
+        .unwrap();
+
+        let body = str::from_utf8(request.body()).unwrap();
+
+        // should not have client_secret parameter
+        assert_eq!(body.contains("client_secret"), false);
+
+        // should have code_verifier parameter
+        assert_eq!(
+            body.contains("code_verifier=the_secret_code_verifier"),
+            true
+        );
+    }
 }

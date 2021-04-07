@@ -39,8 +39,9 @@ impl Provider {
         &self,
         redirect_uri: RedirectUri,
         client_id: &str,
-        client_secret: &str,
         auth_code: &str,
+        client_secret: Option<&str>,
+        code_verifier: Option<&str>,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
         RedirectUri: TryInto<Uri>,
@@ -49,8 +50,9 @@ impl Provider {
             &self.token_endpoint,
             redirect_uri,
             client_id,
-            client_secret,
             auth_code,
+            client_secret,
+            code_verifier,
         )
     }
 
@@ -74,6 +76,7 @@ impl Provider {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct JWK {
     kty: String,
     alg: String,
@@ -87,10 +90,12 @@ pub struct JWK {
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct JWKS {
     pub keys: Vec<JWK>,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 impl JWKS {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
     where
