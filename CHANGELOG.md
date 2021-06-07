@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2021-05-07
+
 - Update to [tame-oauth](https://crates.io/crates/tame-oauth) 0.5.
 
 ## [0.3.0] - 2021-04-07
