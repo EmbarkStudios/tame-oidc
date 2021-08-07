@@ -185,12 +185,9 @@ mod test {
         let body = str::from_utf8(request.body()).unwrap();
 
         // should not have client_secret parameter
-        assert_eq!(body.contains("client_secret"), false);
+        assert!(!body.contains("client_secret"));
 
         // should have code_verifier parameter
-        assert_eq!(
-            body.contains("code_verifier=the_secret_code_verifier"),
-            true
-        );
+        assert!(body.contains("code_verifier=the_secret_code_verifier"));
     }
 }
