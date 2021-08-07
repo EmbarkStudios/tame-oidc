@@ -18,12 +18,9 @@ deny = [
 ]
 skip = [
     # most crates still reference the pre 1.0 version
-    { name = "cfg-if", version = "=0.1.10" },
     { name = "base64", version = "0.12.3" },
 ]
 skip-tree = [
-    # hyper (via h2) uses an outdated version
-    { name = "pin-project", version = "=0.4.27" },
 ]
 
 [licenses]
@@ -41,7 +38,6 @@ exceptions = [
     { allow = ["ISC"], name = "simple_asn1" },
     { allow = ["ISC", "MIT", "OpenSSL"], name = "ring" },
     { allow = ["Zlib"], name = "tinyvec" },
-    { allow = ["BSD-3-Clause"], name = "instant" },
 ]
 
 [[licenses.clarify]]
