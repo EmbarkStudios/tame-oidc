@@ -1,5 +1,5 @@
 use crate::{
-    errors::{RequestError, TokenDataError},
+    errors::{Error, RequestError, TokenDataError},
     oidc::{exchange_token_request, into_uri, refresh_token_request},
 };
 use http::{Request, Uri};
@@ -23,13 +23,13 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
+    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
     where
         S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
-            return Err(tame_oauth::Error::HttpStatus(parts.status));
+            return Err(Error::HttpStatus(parts.status));
         }
 
         Ok(serde_json::from_slice(body.as_ref())?)
@@ -97,13 +97,13 @@ pub struct JWKS {
 
 #[allow(clippy::upper_case_acronyms)]
 impl JWKS {
-    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, tame_oauth::Error>
+    pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
     where
         S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
-            return Err(tame_oauth::Error::HttpStatus(parts.status));
+            return Err(Error::HttpStatus(parts.status));
         }
         Ok(serde_json::from_slice(body.as_ref())?)
     }
@@ -146,7 +146,7 @@ fn try_token_data(token: &str, jwk: &JWK) -> jsonwebtoken::errors::Result<TokenD
 }
 
 /// Return a Request object for validating a well-known OIDC issuer
-pub fn well_known(issuer: &str) -> Result<http::Request<&'static str>, tame_oauth::Error> {
+pub fn well_known(issuer: &str) -> Result<http::Request<&'static str>, Error> {
     let well_known_uri = format!(
         "{}/.well-known/openid-configuration",
         issuer.trim_end_matches('/')

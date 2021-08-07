@@ -1,7 +1,6 @@
-use crate::errors::RequestError;
+use crate::errors::{Error, RequestError};
 use http::{header::CONTENT_TYPE, Request, Uri};
 use std::convert::TryInto;
-use tame_oauth::Error;
 use url::form_urlencoded::Serializer;
 
 /// This is the schema of the server's response.
