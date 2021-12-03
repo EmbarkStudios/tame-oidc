@@ -1,3 +1,5 @@
+use crate::auth_scheme::ClientAuthentication;
+use crate::oidc::{authorization_request, user_info_request, Token};
 use crate::{
     errors::{Error, RequestError, TokenDataError},
     oidc::{exchange_token_request, into_uri, refresh_token_request},
@@ -5,6 +7,7 @@ use crate::{
 use http::{Request, Uri};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::convert::TryInto;
 
 #[derive(Deserialize, Debug)]
@@ -16,6 +19,8 @@ pub struct Provider {
     pub token_endpoint: Uri,
     #[serde(with = "crate::deserialize_uri")]
     pub jwks_uri: Uri,
+    #[serde(with = "crate::deserialize_uri")]
+    pub userinfo_endpoint: Uri,
     pub scopes_supported: Vec<String>,
     pub response_types_supported: Vec<String>,
     pub claims_supported: Vec<String>,
@@ -35,58 +40,140 @@ impl Provider {
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
-    pub fn exchange_token_request<RedirectUri>(
+    pub fn authorization_request<RedirectUri>(
         &self,
         redirect_uri: RedirectUri,
-        client_id: &str,
-        auth_code: &str,
-        client_secret: Option<&str>,
-        code_verifier: Option<&str>,
+        auth: &ClientAuthentication,
+        scopes: &Option<Vec<String>>,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
         RedirectUri: TryInto<Uri>,
     {
-        exchange_token_request(
-            &self.token_endpoint,
-            redirect_uri,
-            client_id,
-            auth_code,
-            client_secret,
-            code_verifier,
-        )
+        authorization_request(&self.authorization_endpoint, redirect_uri, auth, scopes)
+    }
+
+    pub fn exchange_token_request<RedirectUri>(
+        &self,
+        redirect_uri: RedirectUri,
+        auth: &ClientAuthentication,
+        auth_code: &str,
+    ) -> Result<Request<Vec<u8>>, RequestError>
+    where
+        RedirectUri: TryInto<Uri>,
+    {
+        exchange_token_request(&self.token_endpoint, redirect_uri, auth, auth_code)
+    }
+
+    pub fn validate_token_data(
+        &self,
+        client_id: &str,
+        token: &Token,
+    ) -> Result<TokenData<Claims>, TokenDataError> {
+        if let Some(ref id_token) = token.id_token {
+            let mut audience = HashSet::new();
+            audience.insert(client_id.to_owned());
+            let validation = Validation {
+                iss: Some(self.issuer.clone()),
+                aud: Some(audience),
+                validate_exp: true,
+                algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
+                ..Validation::default()
+            };
+            return Ok(jsonwebtoken::dangerous_insecure_decode_with_validation(
+                id_token,
+                &validation,
+            )?);
+        }
+        Err(TokenDataError::NoJWKs)
+    }
+
+    pub fn validate_token_signature(
+        &self,
+        token: &Token,
+        jwks: &[JWK],
+    ) -> Result<(), TokenDataError> {
+        if let Some(ref id_token) = token.id_token {
+            let validation = Validation {
+                algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
+                ..Validation::default()
+            };
+            verify_rsa(id_token, jwks, validation)?;
+            return Ok(());
+        }
+        Err(TokenDataError::NoJWKs)
     }
 
     pub fn refresh_token_request(
         &self,
-        client_id: &str,
-        client_secret: &str,
+        auth: &ClientAuthentication,
         refresh_token: &str,
     ) -> Result<Request<Vec<u8>>, RequestError> {
-        refresh_token_request(
-            &self.token_endpoint,
-            client_id,
-            client_secret,
-            refresh_token,
-        )
+        refresh_token_request(&self.token_endpoint, auth, refresh_token)
     }
 
-    pub fn jwks_request(&self) -> Result<Request<&'static str>, RequestError> {
+    pub fn user_info_request(&self, access_token: &str) -> Result<Request<Vec<u8>>, RequestError> {
+        user_info_request(&self.userinfo_endpoint, access_token)
+    }
+
+    pub fn jwks_request(&self) -> Result<Request<Vec<u8>>, RequestError> {
         jwks(&self.jwks_uri)
     }
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
 #[allow(clippy::upper_case_acronyms)]
-pub struct JWK {
-    kty: String,
-    alg: String,
+#[serde(untagged)]
+pub enum JWK {
+    RSA(RsaJwk),
+    EllipticCurve(ECKey),
+    OctetKeyPair(OKP),
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct RsaJwk {
+    #[serde(rename = "alg")]
+    algorithm: Option<String>,
+    #[serde(rename = "kty")]
+    key_type: String,
+    // TODO: Allow missing kid? Spec is permissive
+    #[serde(rename = "kid")]
+    key_id: Option<String>,
+    r#use: String,
     #[serde(rename = "e")]
     pub exponent: String,
-    kid: String,
-    r#use: String,
     // the actual key
     #[serde(rename = "n")]
     pub key: String,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct ECKey {
+    #[serde(rename = "alg")]
+    algorithm: Option<String>,
+    #[serde(rename = "kty")]
+    key_type: String,
+    #[serde(rename = "kid")]
+    key_id: Option<String>,
+    r#use: String,
+    #[serde(rename = "crv")]
+    pub curve: String,
+    pub x: String,
+    pub y: String,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct OKP {
+    #[serde(rename = "kty")]
+    key_type: String,
+    #[serde(rename = "kid")]
+    key_id: Option<String>,
+    r#use: String,
+    #[serde(rename = "crv")]
+    pub curve: String,
+    pub x: String,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -109,14 +196,13 @@ impl JWKS {
     }
 }
 
-pub fn from_str(data: &str) -> Provider {
-    serde_json::from_str::<Provider>(data).unwrap()
-}
-
 #[non_exhaustive]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: String,
+    // issued at, seconds
+    pub iat: u64,
+    pub nonce: Option<String>,
 }
 
 /// Deserialize token data
@@ -124,10 +210,12 @@ pub struct Claims {
 pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
     let mut error = None;
     for jwk in jwks {
-        match try_token_data(token, jwk) {
-            Ok(data) => return Ok(data),
-            Err(err) => error = Some(err),
-        };
+        if let JWK::RSA(enc_key) = jwk {
+            match try_token_data(token, enc_key) {
+                Ok(data) => return Ok(data),
+                Err(err) => error = Some(err),
+            }
+        }
     }
     error
         .map(TokenDataError::JWTDecode)
@@ -135,18 +223,54 @@ pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, Toke
         .unwrap_or(Err(TokenDataError::NoJWKs))
 }
 
-fn try_token_data(token: &str, jwk: &JWK) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
-    let exponent = &jwk.exponent;
-    let rsa_component = &jwk.key;
+fn try_token_data(
+    token: &str,
+    enc_key: &RsaJwk,
+) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
+    let mut validation = Validation::default();
+    validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+
     decode::<Claims>(
         token,
-        &DecodingKey::from_rsa_components(rsa_component.as_str(), exponent.as_str()),
-        &Validation::new(Algorithm::RS256),
+        &DecodingKey::from_rsa_components(&enc_key.key, &enc_key.exponent),
+        &validation,
     )
 }
 
+pub fn verify_rsa(
+    token: &str,
+    jwks: &[JWK],
+    validation: Validation,
+) -> Result<TokenData<Claims>, TokenDataError> {
+    let mut error = None;
+    for jwk in jwks {
+        if let JWK::RSA(rsa) = jwk {
+            match try_token_rsa_data(token, &rsa.key, &rsa.exponent, &validation) {
+                Ok(data) => return Ok(data),
+                Err(err) => error = Some(err),
+            }
+        }
+    }
+    error
+        .map(TokenDataError::JWTDecode)
+        .map(Err)
+        .unwrap_or(Err(TokenDataError::NoJWKs))
+}
+
+fn try_token_rsa_data(
+    token: &str,
+    key: &str,
+    exponent: &str,
+    validation: &Validation,
+) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_rsa_components(key, exponent),
+        &validation,
+    )
+}
 /// Return a Request object for validating a well-known OIDC issuer
-pub fn well_known(issuer: &str) -> Result<http::Request<&'static str>, Error> {
+pub fn well_known(issuer: &str) -> Result<http::Request<Vec<u8>>, Error> {
     let well_known_uri = format!(
         "{}/.well-known/openid-configuration",
         issuer.trim_end_matches('/')
@@ -155,20 +279,18 @@ pub fn well_known(issuer: &str) -> Result<http::Request<&'static str>, Error> {
     let request = http::Request::builder()
         .method("GET")
         .uri(&well_known_uri)
-        .body("")?;
+        .body(Vec::with_capacity(0))?;
 
     Ok(request)
 }
 
 /// Return a Request object for fetching a JWKS definition
 /// Basically just a HTTP GET function.
-pub fn jwks<ReqUri: TryInto<Uri>>(
-    uri: ReqUri,
-) -> Result<http::Request<&'static str>, RequestError> {
+pub fn jwks<ReqUri: TryInto<Uri>>(uri: ReqUri) -> Result<http::Request<Vec<u8>>, RequestError> {
     Ok(http::Request::builder()
         .method("GET")
         .uri(into_uri(uri)?)
-        .body("")?)
+        .body(Vec::with_capacity(0))?)
 }
 
 #[cfg(test)]

@@ -18,6 +18,7 @@ name = "embark"
 path = "examples/embark.rs"
 
 [dependencies]
+base64 = "0.13.0"
 chrono = "0.4"
 http = "0.2"
 jsonwebtoken = "7.2"
