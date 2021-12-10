@@ -1,5 +1,5 @@
 use crate::auth_scheme::ClientAuthentication;
-use crate::errors::{Error, OidcValidationError, TokenDataError};
+use crate::errors::{Error, OidcValidationError};
 use crate::oidc::Token;
 use crate::provider;
 use crate::provider::{Claims, Provider, JWKS};
