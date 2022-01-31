@@ -168,8 +168,7 @@ impl TokenValidationStage {
             ));
         }
         let sub = token_data.claims.sub.clone();
-        self.provider
-            .validate_token_signature(&self.token, jwks.keys.as_slice())?;
+        Provider::validate_token_signature(&self.token, jwks.keys.as_slice())?;
         Ok(UserInfoStage {
             client_data: self.client_data,
             provider: self.provider,

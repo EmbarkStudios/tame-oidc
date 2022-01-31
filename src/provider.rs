@@ -87,11 +87,7 @@ impl Provider {
         Err(TokenDataError::NoJWKs)
     }
 
-    pub fn validate_token_signature(
-        &self,
-        token: &Token,
-        jwks: &[JWK],
-    ) -> Result<(), TokenDataError> {
+    pub fn validate_token_signature(token: &Token, jwks: &[JWK]) -> Result<(), TokenDataError> {
         if let Some(ref id_token) = token.id_token {
             let validation = Validation {
                 algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
