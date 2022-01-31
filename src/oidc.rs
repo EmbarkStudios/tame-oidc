@@ -27,8 +27,7 @@ where
         "scope",
         &scopes
             .as_ref()
-            .map(|s| s.join(" "))
-            .unwrap_or_else(|| "openid".to_owned()),
+            .map_or_else(|| "openid".to_owned(), |s| s.join(" ")),
     );
     if let Some(state) = &auth.state {
         serializer.append_pair("state", state);
@@ -276,7 +275,7 @@ mod test {
             AuthenticationScheme::Pkce(PkceCredentials::new(
                 "ch".to_owned(),
                 "&S256".to_owned(),
-                spooky_secret_verifier.clone(),
+                spooky_secret_verifier,
             )),
             None,
             None,
@@ -293,6 +292,6 @@ mod test {
 
         // should not have client_secret parameter
         assert!(!body.contains("client_secret"));
-        assert!(body.contains("code_verifier"))
+        assert!(body.contains("code_verifier"));
     }
 }

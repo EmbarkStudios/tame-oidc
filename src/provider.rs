@@ -227,8 +227,10 @@ fn try_token_data(
     token: &str,
     enc_key: &RsaJwk,
 ) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
-    let mut validation = Validation::default();
-    validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+    let validation = Validation {
+        algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
+        ..Default::default()
+    };
 
     decode::<Claims>(
         token,
@@ -266,7 +268,7 @@ fn try_token_rsa_data(
     decode::<Claims>(
         token,
         &DecodingKey::from_rsa_components(key, exponent),
-        &validation,
+        validation,
     )
 }
 /// Return a Request object for validating a well-known OIDC issuer

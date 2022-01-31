@@ -63,8 +63,7 @@ impl ClientInfoStage {
         let authorization = self.validate_provider(res)?;
         let _res = (req_fn)(authorization.generate_authorization_request()?).await;
         let (auth_code, state) = auth_fut.await;
-        let token =
-            authorization.validate_auth_info(auth_code, state.as_ref().map(|s| s.as_str()))?;
+        let token = authorization.validate_auth_info(auth_code, state.as_deref())?;
         let res = (req_fn)(token.generate_access_token_request()?).await;
         let validate = token.parse_token(res)?;
         let res = (req_fn)(validate.generate_provider_jwks_request()?).await;
@@ -97,7 +96,7 @@ impl AuthorizationStage {
         auth_code: String,
         state: Option<&str>,
     ) -> Result<AccessTokenStage, Error> {
-        if state != self.client_data.auth.state.as_ref().map(|s| s.as_str()) {
+        if state != self.client_data.auth.state.as_deref() {
             return Err(crate::errors::Error::OidcValidation(
                 OidcValidationError::UserMismatch,
             ));
