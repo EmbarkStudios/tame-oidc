@@ -162,13 +162,18 @@ impl TokenValidationStage {
         let token_data = self
             .provider
             .validate_token_data(&self.client_data.auth.client_id, &self.token)?;
+
         if token_data.claims.nonce != self.client_data.auth.nonce {
             return Err(crate::errors::Error::OidcValidation(
                 OidcValidationError::NonceMismatch,
             ));
         }
+        self.provider.validate_token_signature(
+            &self.client_data.auth.client_id,
+            &self.token,
+            jwks.keys.as_slice(),
+        )?;
         let sub = token_data.claims.sub.clone();
-        Provider::validate_token_signature(&self.token, jwks.keys.as_slice())?;
         Ok(UserInfoStage {
             client_data: self.client_data,
             provider: self.provider,

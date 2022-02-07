@@ -7,7 +7,6 @@ use crate::{
 use http::{Request, Uri};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::convert::TryInto;
 
 #[derive(Deserialize, Debug)]
@@ -64,37 +63,42 @@ impl Provider {
         exchange_token_request(&self.token_endpoint, redirect_uri, auth, auth_code)
     }
 
-    pub fn validate_token_data(
+    // Only used to provide better error messages, otherwise anything comes back as an invalid
+    // signature, now we can get f.e. InvalidIssuer specifically
+    pub(crate) fn validate_token_data(
         &self,
         client_id: &str,
         token: &Token,
     ) -> Result<TokenData<Claims>, TokenDataError> {
         if let Some(ref id_token) = token.id_token {
-            let mut audience = HashSet::new();
-            audience.insert(client_id.to_owned());
-            let validation = Validation {
-                iss: Some(self.issuer.clone()),
-                aud: Some(audience),
-                validate_exp: true,
-                algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
-                ..Validation::default()
-            };
-            return Ok(jsonwebtoken::dangerous_insecure_decode_with_validation(
+            let mut validation = Validation::default();
+            validation.set_issuer(&[self.issuer.clone()]);
+            validation.set_audience(&[client_id]);
+            validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+            validation.insecure_disable_signature_validation();
+
+            return Ok(jsonwebtoken::decode(
                 id_token,
+                &DecodingKey::from_rsa_raw_components(&[], &[]),
                 &validation,
             )?);
         }
         Err(TokenDataError::NoJWKs)
     }
 
-    pub fn validate_token_signature(token: &Token, jwks: &[JWK]) -> Result<(), TokenDataError> {
+    pub fn validate_token_signature(
+        &self,
+        client_id: &str,
+        token: &Token,
+        jwks: &[JWK],
+    ) -> Result<TokenData<Claims>, TokenDataError> {
         if let Some(ref id_token) = token.id_token {
-            let validation = Validation {
-                algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
-                ..Validation::default()
-            };
-            verify_rsa(id_token, jwks, validation)?;
-            return Ok(());
+            let mut validation = Validation::default();
+            validation.set_issuer(&[self.issuer.clone()]);
+            validation.set_audience(&[client_id]);
+            validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+            validation.set_required_spec_claims(&["iss", "aud", "sub"]);
+            return verify_rsa(id_token, jwks, validation);
         }
         Err(TokenDataError::NoJWKs)
     }
@@ -223,14 +227,12 @@ fn try_token_data(
     token: &str,
     enc_key: &RsaJwk,
 ) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
-    let validation = Validation {
-        algorithms: vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512],
-        ..Default::default()
-    };
+    let mut validation = Validation::default();
+    validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
 
     decode::<Claims>(
         token,
-        &DecodingKey::from_rsa_components(&enc_key.key, &enc_key.exponent),
+        &DecodingKey::from_rsa_components(&enc_key.key, &enc_key.exponent)?,
         &validation,
     )
 }
@@ -263,7 +265,7 @@ fn try_token_rsa_data(
 ) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
     decode::<Claims>(
         token,
-        &DecodingKey::from_rsa_components(key, exponent),
+        &DecodingKey::from_rsa_components(key, exponent)?,
         validation,
     )
 }
