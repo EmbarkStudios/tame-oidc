@@ -7,6 +7,7 @@ use std::{
     net::{TcpListener, TcpStream},
     str,
 };
+use tame_oidc::auth_scheme::{AuthenticationScheme, ClientAuthentication, ClientCredentials};
 use tame_oidc::{
     oidc::Token,
     provider::{self, Provider, JWKS},
@@ -92,14 +93,10 @@ async fn main() {
 
     // 3. User now has 2 minutes to swap the auth code for an Embark Access token.
     // Make a `POST` request to the auth service /oauth2/token
+    let scheme = AuthenticationScheme::Basic(ClientCredentials::new(client_secret));
+    let client_authentication = ClientAuthentication::new(client_id, scheme, None, None);
     let exchange_request = provider
-        .exchange_token_request(
-            redirect_uri,
-            &client_id,
-            &auth_code,
-            Some(&client_secret),
-            None,
-        )
+        .exchange_token_request(redirect_uri, &client_authentication, &auth_code)
         .unwrap();
 
     let response = http_send(&http_client, exchange_request).await;
@@ -119,7 +116,7 @@ async fn main() {
 
     // 5. Refresh token
     let request = provider
-        .refresh_token_request(&client_id, &client_secret, &refresh_token)
+        .refresh_token_request(&client_authentication, &refresh_token)
         .unwrap();
     let response = http_send(&http_client, request).await;
     let new_refresh_token = Token::from_response(response).unwrap();

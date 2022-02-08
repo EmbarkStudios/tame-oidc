@@ -68,10 +68,11 @@
 )]
 // END - Embark standard lints v0.4
 // crate-specific exceptions:
-#![allow()]
 
 pub mod errors;
 pub mod oidc;
 pub mod provider;
 
+pub mod auth_scheme;
 mod deserialize_uri;
+pub mod strict;

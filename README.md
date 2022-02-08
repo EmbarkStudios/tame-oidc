@@ -10,7 +10,10 @@ A very tame `OIDC` client based on `tame-oauth`.
 [![dependency status](https://deps.rs/repo/github/EmbarkStudios/tame-oidc/status.svg)](https://deps.rs/repo/github/EmbarkStudios/tame-oidc)
 [![Build status](https://github.com/gleam-lang/gleam/workflows/ci/badge.svg?branch=main)](https://github.com/EmbarkStudios/tame-oidc/actions)
 
-`tame-oidc` is a small oidc crate that follows the [sans-io](https://sans-io.readthedocs.io/) approach.
+`tame-oidc` is a small oidc crate that follows the [sans-io](https://sans-io.readthedocs.io/) approach.  
+It supports RFCs:
+- [RFC7636 Proof Key for Code Exchange by OAuth Public Clients](https://datatracker.ietf.org/doc/html/rfc7636#page-3)
+- 
 
 ## Why?
 
