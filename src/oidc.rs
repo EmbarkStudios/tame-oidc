@@ -120,9 +120,9 @@ impl From<TokenExchangeResponse> for Token {
     fn from(t: TokenExchangeResponse) -> Token {
         let expires_ts = t.expires_in.and_then(|time_until| {
             SystemTime::now()
-                .duration_since(UNIX_EPOCH)
+                .duration_since(UNIX_EPOCH) // Only an err if time moved backwards
                 .ok()
-                .and_then(|time_stamp| time_stamp.as_secs().try_into().ok())
+                .and_then(|time_stamp| time_stamp.as_secs().try_into().ok()) // Only an err after year 2264
                 .map(|now_as_seconds: i64| time_until + now_as_seconds)
         });
 
