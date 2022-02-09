@@ -3,6 +3,7 @@ use crate::errors::{Error, RequestError};
 use http::header::AUTHORIZATION;
 use http::{header::CONTENT_TYPE, Request, Uri};
 use std::convert::TryInto;
+use std::time::{SystemTime, UNIX_EPOCH};
 use url::form_urlencoded::Serializer;
 
 pub fn authorization_request<ReqUri, RedirectUri>(
@@ -117,9 +118,13 @@ impl Token {
 
 impl From<TokenExchangeResponse> for Token {
     fn from(t: TokenExchangeResponse) -> Token {
-        let expires_ts = t
-            .expires_in
-            .map(|time_until| time_until + time::OffsetDateTime::now_utc().unix_timestamp());
+        let expires_ts = t.expires_in.and_then(|time_until| {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .ok()
+                .and_then(|time_stamp| time_stamp.as_secs().try_into().ok())
+                .map(|now_as_seconds: i64| time_until + now_as_seconds)
+        });
 
         Token {
             access_token: t.access_token,
