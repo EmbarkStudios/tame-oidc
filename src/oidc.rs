@@ -119,7 +119,7 @@ impl From<TokenExchangeResponse> for Token {
     fn from(t: TokenExchangeResponse) -> Token {
         let expires_ts = t
             .expires_in
-            .map(|time_until| time_until + chrono::Utc::now().timestamp());
+            .map(|time_until| time_until + time::OffsetDateTime::now_utc().unix_timestamp());
 
         Token {
             access_token: t.access_token,
