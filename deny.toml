@@ -29,6 +29,7 @@ confidence-threshold = 0.92
 allow = [
     "Apache-2.0",
     "MIT",
+    "BSD-3-Clause"
 ]
 exceptions = [
     { allow = ["MPL-2.0"], name = "webpki-roots" },
@@ -54,12 +55,9 @@ license-files = [
 ]
 
 [[licenses.clarify]]
-name = "encoding-rs"
-expression = "MIT AND Apache-2.0"
-license-files = [
-    { path = "LICENSE-MIT", hash = 0xafaec4cb },
-    { path = "LICENSE-APACHE", hash = 0x18785531 },
-]
+name = "encoding_rs"
+expression = "(Apache-2.0 OR MIT) AND BSD-3-Clause"
+license-files = [{ path = "COPYRIGHT", hash = 0x39f8ad31 }]
 
 [[licenses.clarify]]
 name = "webpki"
