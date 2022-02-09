@@ -17,8 +17,7 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
-    # most crates still reference the pre 1.0 version
-    { name = "base64", version = "0.12.3" },
+    { name = "itoa", version = "=0.4.8"},
 ]
 skip-tree = [
 ]
@@ -52,6 +51,14 @@ name = "ring"
 expression = "ISC AND MIT AND OpenSSL"
 license-files = [
     { path = "LICENSE", hash = 0xbd0eed23 },
+]
+
+[[licenses.clarify]]
+name = "encoding-rs"
+expression = "MIT AND Apache-2.0"
+license-files = [
+    { path = "LICENSE-MIT", hash = 0xafaec4cb },
+    { path = "LICENSE-APACHE", hash = 0x18785531 },
 ]
 
 [[licenses.clarify]]
