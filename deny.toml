@@ -17,7 +17,6 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
-    { name = "itoa", version = "=0.4.8"},
 ]
 skip-tree = [
 ]
