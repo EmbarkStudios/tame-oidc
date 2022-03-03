@@ -1,3 +1,5 @@
+<!-- markdownlint-disable blanks-around-headings blanks-around-lists no-duplicate-heading -->
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Changed
+- [PR#15](https://github.com/EmbarkStudios/tame-oidc/pull/15) implemented a strict certifiable OIDC flow.
+
+### Removed
+- [PR#17](https://github.com/EmbarkStudios/tame-oidc/pull/17) removed the unneeded dependency on `chrono`, fixing [#16](https://github.com/EmbarkStudios/tame-oidc/issues/16).
+
 ## [0.4.0] - 2021-08-07
 ### Removed
 - Removed `tame-oauth` dependency
