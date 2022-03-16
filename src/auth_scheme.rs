@@ -44,6 +44,7 @@ pub struct PkceCredentials {
     pub code_challenge: String,
     pub code_challenge_method: String,
     pub code_verifier: String,
+    pub client_secret: Option<String>,
 }
 
 impl PkceCredentials {
@@ -51,11 +52,13 @@ impl PkceCredentials {
         code_challenge: String,
         code_challenge_method: String,
         code_verifier: String,
+        client_secret: Option<String>,
     ) -> Self {
         PkceCredentials {
             code_challenge,
             code_challenge_method,
             code_verifier,
+            client_secret,
         }
     }
 }
