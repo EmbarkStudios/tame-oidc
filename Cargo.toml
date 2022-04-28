@@ -6,6 +6,7 @@ authors = ["Embark <opensource@embark-studios.com>", "Mathias Tervo <mathias.ter
 edition = "2018"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/EmbarkStudios/tame-oidc"
+categories = ["authentication"]
 repository = "https://github.com/EmbarkStudios/tame-oidc"
 keywords = ["oauth", "oidc", "tame", "sans-io"]
 
