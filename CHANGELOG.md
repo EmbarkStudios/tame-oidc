@@ -1,3 +1,5 @@
+<!-- markdownlint-disable blanks-around-headings blanks-around-lists no-duplicate-heading -->
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -12,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pkce` flow can have an optional `client_secret`
 
 ### Changed
-- Strict certifiable OIDC flow
-- `chrono` replaced with `time`
+- [PR#15](https://github.com/EmbarkStudios/tame-oidc/pull/15) implemented a strict certifiable OIDC flow.
+- [PR#17](https://github.com/EmbarkStudios/tame-oidc/pull/17) removed the unneeded dependency on `chrono`, fixing [#16](https://github.com/EmbarkStudios/tame-oidc/issues/16).
 
 ## [0.4.0] - 2021-08-07
 ### Removed
@@ -46,8 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/EmbarkStudios/tame-oidc/compare/0.5.0...HEAD
 [0.5.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.1...0.4.0
-[0.3.1]: https://github.com/EmbarkStudios/tame-oidc/releases/tag/0.3.1
-[0.3.0]: https://github.com/EmbarkStudios/tame-oidc/releases/tag/0.3.0
-[0.2.0]: https://github.com/EmbarkStudios/tame-oidc/releases/tag/0.2.0
-[0.1.0]: https://github.com/EmbarkStudios/tame-oidc/releases/tag/0.1.0
+[0.3.1]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.0.1...0.1.0
 [0.0.1]: https://github.com/EmbarkStudios/tame-oidc/releases/tag/0.0.1

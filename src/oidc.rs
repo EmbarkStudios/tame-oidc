@@ -83,7 +83,7 @@ struct TokenExchangeResponse {
 }
 
 /// This is the schema of the server's response.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Token {
     /// The actual token
     pub access_token: String,
