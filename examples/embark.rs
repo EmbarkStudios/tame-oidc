@@ -8,6 +8,7 @@ use std::{
     str,
 };
 use tame_oidc::auth_scheme::{AuthenticationScheme, ClientAuthentication, ClientCredentials};
+use tame_oidc::provider::Claims;
 use tame_oidc::{
     oidc::Token,
     provider::{self, Provider, JWKS},
@@ -109,7 +110,7 @@ async fn main() {
     let response = http_send(&http_client, request).await;
     let jwks = JWKS::from_response(response).unwrap();
 
-    let token_data = provider::verify_token(&access_token.access_token, &jwks.keys);
+    let token_data = provider::verify_token::<Claims>(&access_token.access_token, &jwks.keys);
     dbg!(&token_data);
     dbg!(&access_token);
     let refresh_token = access_token.refresh_token.unwrap();

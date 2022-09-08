@@ -6,6 +6,7 @@ use crate::{
 };
 use http::{Request, Uri};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 
@@ -207,7 +208,10 @@ pub struct Claims {
 
 /// Deserialize token data
 /// Returns either a token or jsonwebtoken error
-pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, TokenDataError> {
+pub fn verify_token<CLAIMS>(token: &str, jwks: &[JWK]) -> Result<TokenData<CLAIMS>, TokenDataError>
+where
+    CLAIMS: DeserializeOwned,
+{
     let mut error = None;
     for jwk in jwks {
         if let JWK::RSA(enc_key) = jwk {
@@ -223,25 +227,31 @@ pub fn verify_token(token: &str, jwks: &[JWK]) -> Result<TokenData<Claims>, Toke
         .unwrap_or(Err(TokenDataError::NoJWKs))
 }
 
-fn try_token_data(
+fn try_token_data<CLAIMS>(
     token: &str,
     enc_key: &RsaJwk,
-) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
+) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
+where
+    CLAIMS: DeserializeOwned,
+{
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
 
-    decode::<Claims>(
+    decode::<CLAIMS>(
         token,
         &DecodingKey::from_rsa_components(&enc_key.key, &enc_key.exponent)?,
         &validation,
     )
 }
 
-pub fn verify_rsa(
+pub fn verify_rsa<CLAIMS>(
     token: &str,
     jwks: &[JWK],
     validation: Validation,
-) -> Result<TokenData<Claims>, TokenDataError> {
+) -> Result<TokenData<CLAIMS>, TokenDataError>
+where
+    CLAIMS: DeserializeOwned,
+{
     let mut error = None;
     for jwk in jwks {
         if let JWK::RSA(rsa) = jwk {
@@ -257,13 +267,16 @@ pub fn verify_rsa(
         .unwrap_or(Err(TokenDataError::NoJWKs))
 }
 
-fn try_token_rsa_data(
+fn try_token_rsa_data<CLAIMS>(
     token: &str,
     key: &str,
     exponent: &str,
     validation: &Validation,
-) -> jsonwebtoken::errors::Result<TokenData<Claims>> {
-    decode::<Claims>(
+) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
+where
+    CLAIMS: DeserializeOwned,
+{
+    decode::<CLAIMS>(
         token,
         &DecodingKey::from_rsa_components(key, exponent)?,
         validation,
