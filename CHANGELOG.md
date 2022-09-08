@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+
+## [0.5.0] - 2022-04-25
+### Added
+- `pkce` flow can have an optional `client_secret`
+
 ### Changed
 - [PR#15](https://github.com/EmbarkStudios/tame-oidc/pull/15) implemented a strict certifiable OIDC flow.
-
-### Removed
 - [PR#17](https://github.com/EmbarkStudios/tame-oidc/pull/17) removed the unneeded dependency on `chrono`, fixing [#16](https://github.com/EmbarkStudios/tame-oidc/issues/16).
 
 ## [0.4.0] - 2021-08-07
@@ -42,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial version
 
 <!-- next-url -->
-[Unreleased]: https://github.com/EmbarkStudios/tame-oidc/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/EmbarkStudios/tame-oidc/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.2.0...0.3.0
