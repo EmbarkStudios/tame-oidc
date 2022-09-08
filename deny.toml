@@ -17,6 +17,7 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
+    { name = "itoa", version = "=0.4.8"},
 ]
 skip-tree = [
 ]
@@ -28,7 +29,6 @@ confidence-threshold = 0.92
 allow = [
     "Apache-2.0",
     "MIT",
-    "BSD-3-Clause"
 ]
 exceptions = [
     { allow = ["MPL-2.0"], name = "webpki-roots" },
