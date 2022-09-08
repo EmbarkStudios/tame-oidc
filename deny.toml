@@ -17,7 +17,6 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
-    { name = "itoa", version = "=0.4.8"},
 ]
 skip-tree = [
 ]
@@ -37,6 +36,7 @@ exceptions = [
     { allow = ["ISC"], name = "simple_asn1" },
     { allow = ["ISC", "MIT", "OpenSSL"], name = "ring" },
     { allow = ["Zlib"], name = "tinyvec" },
+    { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
 ]
 
 [[licenses.clarify]]
