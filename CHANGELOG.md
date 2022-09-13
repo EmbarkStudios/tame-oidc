@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Changed
+- Make claims flexible by accepting any user provided DeserializeOwned in functions, 
+that extract claims.
 
 ## [0.5.0] - 2022-04-25
 ### Added
