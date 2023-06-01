@@ -19,7 +19,7 @@ name = "embark"
 path = "examples/embark.rs"
 
 [dependencies]
-base64 = "0.13"
+base64 = "0.21"
 http = "0.2"
 jsonwebtoken = "8.1"
 serde = { version = "1", features = ["derive"] }
@@ -37,5 +37,5 @@ features = ["rustls-tls"]
 default-features = false
 
 [dev-dependencies.tokio]
-version = "1.21"
+version = "1.28"
 features = ["macros", "rt-multi-thread"]

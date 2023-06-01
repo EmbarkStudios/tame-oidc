@@ -1,10 +1,15 @@
 use crate::auth_scheme::{AuthenticationScheme, ClientAuthentication};
 use crate::errors::{Error, RequestError};
+use base64::{engine::general_purpose, Engine as _};
 use http::header::AUTHORIZATION;
 use http::{header::CONTENT_TYPE, Request, Uri};
 use std::convert::TryInto;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::form_urlencoded::Serializer;
+
+fn encode_base64(input: String) -> String {
+    general_purpose::STANDARD.encode(input)
+}
 
 pub fn authorization_request<ReqUri, RedirectUri>(
     uri: ReqUri,
@@ -40,7 +45,7 @@ where
 
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
+            let basic = encode_base64(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -168,7 +173,7 @@ where
     serializer.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
+            let basic = encode_base64(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -249,7 +254,7 @@ where
     partial.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
+            let basic = encode_base64(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -274,8 +279,38 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::auth_scheme::PkceCredentials;
+    use crate::auth_scheme::{ClientCredentials, PkceCredentials};
     use std::str;
+
+    #[test]
+    fn authorization_request_basic_auth_header_encoding() {
+        let uri = "https://example.com";
+        let redirect_uri = "https://example.com/redirect";
+        let client_credentials = ClientCredentials::new("some-client-secret".to_string());
+        let auth = ClientAuthentication {
+            client_id: "some-client-id".to_string(),
+            scheme: AuthenticationScheme::Basic(client_credentials),
+            nonce: None,
+            state: None,
+        };
+        let scopes = None;
+
+        let result = authorization_request(uri, redirect_uri, &auth, &scopes).unwrap();
+
+        let body = str::from_utf8(&result.body()).unwrap();
+        assert_eq!(body, "redirect_uri=https%3A%2F%2Fexample.com%2Fredirect&grant_type=authorization_code&response_type=code&scope=openid&client_id=some-client-id");
+
+        let auth_header = result
+            .headers()
+            .get("authorization")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(
+            auth_header,
+            "Basic c29tZS1jbGllbnQtaWQ6c29tZS1jbGllbnQtc2VjcmV0"
+        );
+    }
 
     #[test]
     fn pkce_flow_exchange() {
