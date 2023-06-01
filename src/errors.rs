@@ -4,6 +4,9 @@ pub enum RequestError {
     #[error("The provided Uri was invalid")]
     InvalidUri,
 
+    #[error("Precondition unfulfilled: {0}")]
+    PreconditionUnfulfilled(String),
+
     #[error(transparent)]
     HTTP(#[from] http::Error),
 }

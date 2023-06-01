@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Fixed
+- Make provider conform better to spec by making fields `token_endpoint` and `userinfo_endpoint` optional.
+
+## [0.6.0] - 
 ### Changed
 - Make claims flexible by accepting any user provided DeserializeOwned in functions, 
 that extract claims.

@@ -15,12 +15,14 @@ pub struct Provider {
     pub issuer: String,
     #[serde(with = "crate::deserialize_uri")]
     pub authorization_endpoint: Uri,
-    #[serde(with = "crate::deserialize_uri")]
-    pub token_endpoint: Uri,
+    // Only optional if only the implicit flow is used https://openid.net/specs/openid-connect-discovery-1_0.html
+    #[serde(deserialize_with = "crate::deserialize_uri::deserialize_opt")]
+    pub token_endpoint: Option<Uri>,
     #[serde(with = "crate::deserialize_uri")]
     pub jwks_uri: Uri,
-    #[serde(with = "crate::deserialize_uri")]
-    pub userinfo_endpoint: Uri,
+    // Optional but recommended
+    #[serde(deserialize_with = "crate::deserialize_uri::deserialize_opt")]
+    pub userinfo_endpoint: Option<Uri>,
     pub scopes_supported: Vec<String>,
     pub response_types_supported: Vec<String>,
     pub claims_supported: Vec<String>,
@@ -61,7 +63,12 @@ impl Provider {
     where
         RedirectUri: TryInto<Uri>,
     {
-        exchange_token_request(&self.token_endpoint, redirect_uri, auth, auth_code)
+        let token_endpoint = self.token_endpoint.as_ref().ok_or_else(|| {
+            RequestError::PreconditionUnfulfilled(
+                "Token endpoint not available on Provider".to_string(),
+            )
+        })?;
+        exchange_token_request(token_endpoint, redirect_uri, auth, auth_code)
     }
 
     // Only used to provide better error messages, otherwise anything comes back as an invalid
@@ -109,11 +116,21 @@ impl Provider {
         auth: &ClientAuthentication,
         refresh_token: &str,
     ) -> Result<Request<Vec<u8>>, RequestError> {
-        refresh_token_request(&self.token_endpoint, auth, refresh_token)
+        let token_endpoint = self.token_endpoint.as_ref().ok_or_else(|| {
+            RequestError::PreconditionUnfulfilled(
+                "Token endpoint not available on Provider".to_string(),
+            )
+        })?;
+        refresh_token_request(token_endpoint, auth, refresh_token)
     }
 
     pub fn user_info_request(&self, access_token: &str) -> Result<Request<Vec<u8>>, RequestError> {
-        user_info_request(&self.userinfo_endpoint, access_token)
+        let userinfo_endpoint = self.userinfo_endpoint.as_ref().ok_or_else(|| {
+            RequestError::PreconditionUnfulfilled(
+                "No userinfo_endpoint specified on Provider".to_string(),
+            )
+        })?;
+        user_info_request(userinfo_endpoint, access_token)
     }
 
     pub fn jwks_request(&self) -> Result<Request<Vec<u8>>, RequestError> {
