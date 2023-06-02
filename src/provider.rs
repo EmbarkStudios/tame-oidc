@@ -31,14 +31,13 @@ pub struct Provider {
 
 impl Provider {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
-    where
-        S: AsRef<[u8]>,
+        where
+            S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
             return Err(Error::HttpStatus(parts.status));
         }
-
         Ok(serde_json::from_slice(body.as_ref())?)
     }
 
@@ -48,8 +47,8 @@ impl Provider {
         auth: &ClientAuthentication,
         scopes: &Option<Vec<String>>,
     ) -> Result<Request<Vec<u8>>, RequestError>
-    where
-        RedirectUri: TryInto<Uri>,
+        where
+            RedirectUri: TryInto<Uri>,
     {
         authorization_request(&self.authorization_endpoint, redirect_uri, auth, scopes)
     }
@@ -60,8 +59,8 @@ impl Provider {
         auth: &ClientAuthentication,
         auth_code: &str,
     ) -> Result<Request<Vec<u8>>, RequestError>
-    where
-        RedirectUri: TryInto<Uri>,
+        where
+            RedirectUri: TryInto<Uri>,
     {
         let token_endpoint = self.token_endpoint.as_ref().ok_or_else(|| {
             RequestError::PreconditionUnfulfilled(
@@ -203,8 +202,8 @@ pub struct JWKS {
 #[allow(clippy::upper_case_acronyms)]
 impl JWKS {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
-    where
-        S: AsRef<[u8]>,
+        where
+            S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
@@ -226,8 +225,8 @@ pub struct Claims {
 /// Deserialize token data
 /// Returns either a token or jsonwebtoken error
 pub fn verify_token<CLAIMS>(token: &str, jwks: &[JWK]) -> Result<TokenData<CLAIMS>, TokenDataError>
-where
-    CLAIMS: DeserializeOwned,
+    where
+        CLAIMS: DeserializeOwned,
 {
     let mut error = None;
     for jwk in jwks {
@@ -248,8 +247,8 @@ fn try_token_data<CLAIMS>(
     token: &str,
     enc_key: &RsaJwk,
 ) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
-where
-    CLAIMS: DeserializeOwned,
+    where
+        CLAIMS: DeserializeOwned,
 {
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
@@ -266,8 +265,8 @@ pub fn verify_rsa<CLAIMS>(
     jwks: &[JWK],
     validation: Validation,
 ) -> Result<TokenData<CLAIMS>, TokenDataError>
-where
-    CLAIMS: DeserializeOwned,
+    where
+        CLAIMS: DeserializeOwned,
 {
     let mut error = None;
     for jwk in jwks {
@@ -290,8 +289,8 @@ fn try_token_rsa_data<CLAIMS>(
     exponent: &str,
     validation: &Validation,
 ) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
-where
-    CLAIMS: DeserializeOwned,
+    where
+        CLAIMS: DeserializeOwned,
 {
     decode::<CLAIMS>(
         token,
@@ -299,6 +298,7 @@ where
         validation,
     )
 }
+
 /// Return a Request object for validating a well-known OIDC issuer
 pub fn well_known(issuer: &str) -> Result<http::Request<Vec<u8>>, Error> {
     let well_known_uri = format!(
@@ -325,9 +325,7 @@ pub fn jwks<ReqUri: TryInto<Uri>>(uri: ReqUri) -> Result<http::Request<Vec<u8>>,
 
 #[cfg(test)]
 mod test {
-
-    use http::{Method, Uri};
-
+    use http::{Method, Response, Uri};
     use super::*;
 
     #[test]
@@ -340,5 +338,46 @@ mod test {
                 .parse::<Uri>()
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn parse_provider_json() {
+        let json = r#"
+        {
+            "issuer": "https://auth.example.com/",
+            "authorization_endpoint": "https://auth.example.com/oauth2/authorize",
+            "token_endpoint": "https://auth.example.com/oauth2/token",
+            "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
+            "scopes_supported": [
+                "ascope",
+                "play"
+            ],
+            "response_types_supported": [
+                "code",
+                "token"
+            ],
+            "claims_supported": [
+                "aud",
+                "exp",
+                "ext",
+                "iat",
+                "iss",
+                "jti",
+                "nbf",
+                "scp",
+                "sub",
+                "client_id",
+                "ext_provider_id",
+                "company"
+            ],
+            "grant_types_supported": [
+                "authorization_code",
+                "refresh_token",
+                "client_credentials"
+            ]
+        }"#;
+
+        let response = Response::new(json.as_bytes());
+        let _provider = Provider::from_response(response).unwrap();
     }
 }
