@@ -16,11 +16,13 @@ pub struct Provider {
     #[serde(with = "crate::deserialize_uri")]
     pub authorization_endpoint: Uri,
     // Only optional if only the implicit flow is used https://openid.net/specs/openid-connect-discovery-1_0.html
+    #[serde(default)]
     #[serde(deserialize_with = "crate::deserialize_uri::deserialize_opt")]
     pub token_endpoint: Option<Uri>,
     #[serde(with = "crate::deserialize_uri")]
     pub jwks_uri: Uri,
     // Optional but recommended
+    #[serde(default)]
     #[serde(deserialize_with = "crate::deserialize_uri::deserialize_opt")]
     pub userinfo_endpoint: Option<Uri>,
     pub scopes_supported: Vec<String>,
@@ -31,8 +33,8 @@ pub struct Provider {
 
 impl Provider {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
-        where
-            S: AsRef<[u8]>,
+    where
+        S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
@@ -47,8 +49,8 @@ impl Provider {
         auth: &ClientAuthentication,
         scopes: &Option<Vec<String>>,
     ) -> Result<Request<Vec<u8>>, RequestError>
-        where
-            RedirectUri: TryInto<Uri>,
+    where
+        RedirectUri: TryInto<Uri>,
     {
         authorization_request(&self.authorization_endpoint, redirect_uri, auth, scopes)
     }
@@ -59,8 +61,8 @@ impl Provider {
         auth: &ClientAuthentication,
         auth_code: &str,
     ) -> Result<Request<Vec<u8>>, RequestError>
-        where
-            RedirectUri: TryInto<Uri>,
+    where
+        RedirectUri: TryInto<Uri>,
     {
         let token_endpoint = self.token_endpoint.as_ref().ok_or_else(|| {
             RequestError::PreconditionUnfulfilled(
@@ -202,8 +204,8 @@ pub struct JWKS {
 #[allow(clippy::upper_case_acronyms)]
 impl JWKS {
     pub fn from_response<S>(response: http::Response<S>) -> Result<Self, Error>
-        where
-            S: AsRef<[u8]>,
+    where
+        S: AsRef<[u8]>,
     {
         let (parts, body) = response.into_parts();
         if !parts.status.is_success() {
@@ -225,8 +227,8 @@ pub struct Claims {
 /// Deserialize token data
 /// Returns either a token or jsonwebtoken error
 pub fn verify_token<CLAIMS>(token: &str, jwks: &[JWK]) -> Result<TokenData<CLAIMS>, TokenDataError>
-    where
-        CLAIMS: DeserializeOwned,
+where
+    CLAIMS: DeserializeOwned,
 {
     let mut error = None;
     for jwk in jwks {
@@ -247,8 +249,8 @@ fn try_token_data<CLAIMS>(
     token: &str,
     enc_key: &RsaJwk,
 ) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
-    where
-        CLAIMS: DeserializeOwned,
+where
+    CLAIMS: DeserializeOwned,
 {
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
@@ -265,8 +267,8 @@ pub fn verify_rsa<CLAIMS>(
     jwks: &[JWK],
     validation: Validation,
 ) -> Result<TokenData<CLAIMS>, TokenDataError>
-    where
-        CLAIMS: DeserializeOwned,
+where
+    CLAIMS: DeserializeOwned,
 {
     let mut error = None;
     for jwk in jwks {
@@ -289,8 +291,8 @@ fn try_token_rsa_data<CLAIMS>(
     exponent: &str,
     validation: &Validation,
 ) -> jsonwebtoken::errors::Result<TokenData<CLAIMS>>
-    where
-        CLAIMS: DeserializeOwned,
+where
+    CLAIMS: DeserializeOwned,
 {
     decode::<CLAIMS>(
         token,
@@ -325,8 +327,8 @@ pub fn jwks<ReqUri: TryInto<Uri>>(uri: ReqUri) -> Result<http::Request<Vec<u8>>,
 
 #[cfg(test)]
 mod test {
-    use http::{Method, Response, Uri};
     use super::*;
+    use http::{Method, Response, Uri};
 
     #[test]
     fn well_known_req() {
@@ -379,5 +381,51 @@ mod test {
 
         let response = Response::new(json.as_bytes());
         let _provider = Provider::from_response(response).unwrap();
+    }
+
+    #[test]
+    fn parse_provider_json_with_optionals() {
+        let json = r#"
+        {
+            "issuer": "https://auth.example.com/",
+            "authorization_endpoint": "https://auth.example.com/oauth2/authorize",
+            "token_endpoint": "https://auth.example.com/oauth2/token",
+            "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
+            "userinfo_endpoint": "https://auth.example.com/userinfo",
+            "scopes_supported": [
+                "ascope",
+                "play"
+            ],
+            "response_types_supported": [
+                "code",
+                "token"
+            ],
+            "claims_supported": [
+                "aud",
+                "exp",
+                "ext",
+                "iat",
+                "iss",
+                "jti",
+                "nbf",
+                "scp",
+                "sub",
+                "client_id",
+                "ext_provider_id",
+                "company"
+            ],
+            "grant_types_supported": [
+                "authorization_code",
+                "refresh_token",
+                "client_credentials"
+            ]
+        }"#;
+
+        let response = Response::new(json.as_bytes());
+        let provider = Provider::from_response(response).unwrap();
+        assert_eq!(
+            "https://auth.example.com/userinfo".parse::<Uri>().unwrap(),
+            provider.userinfo_endpoint.unwrap()
+        );
     }
 }
