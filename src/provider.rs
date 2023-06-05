@@ -350,37 +350,32 @@ mod test {
             "authorization_endpoint": "https://auth.example.com/oauth2/authorize",
             "token_endpoint": "https://auth.example.com/oauth2/token",
             "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
-            "scopes_supported": [
-                "ascope",
-                "play"
-            ],
-            "response_types_supported": [
-                "code",
-                "token"
-            ],
-            "claims_supported": [
-                "aud",
-                "exp",
-                "ext",
-                "iat",
-                "iss",
-                "jti",
-                "nbf",
-                "scp",
-                "sub",
-                "client_id",
-                "ext_provider_id",
-                "company"
-            ],
-            "grant_types_supported": [
-                "authorization_code",
-                "refresh_token",
-                "client_credentials"
-            ]
+            "scopes_supported": ["some-scope"],
+            "response_types_supported": ["some-response-type"],
+            "claims_supported": ["some-claim"],
+            "grant_types_supported": ["some-type"]
         }"#;
 
         let response = Response::new(json.as_bytes());
-        let _provider = Provider::from_response(response).unwrap();
+        let provider = Provider::from_response(response).unwrap();
+        assert_eq!(
+            "https://auth.example.com/oauth2/token",
+            provider.token_endpoint.unwrap(),
+        );
+        assert_eq!(None, provider.userinfo_endpoint);
+        assert_eq!(provider.issuer, "https://auth.example.com/");
+        assert_eq!(
+            provider.authorization_endpoint,
+            "https://auth.example.com/oauth2/authorize"
+        );
+        assert_eq!(
+            provider.jwks_uri,
+            "https://auth.example.com/.well-known/jwks.json"
+        );
+        assert_eq!(provider.scopes_supported[0], "some-scope");
+        assert_eq!(provider.response_types_supported[0], "some-response-type");
+        assert_eq!(provider.claims_supported[0], "some-claim");
+        assert_eq!(provider.grant_types_supported[0], "some-type");
     }
 
     #[test]
@@ -392,32 +387,13 @@ mod test {
             "token_endpoint": "https://auth.example.com/oauth2/token",
             "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
             "userinfo_endpoint": "https://auth.example.com/userinfo",
-            "scopes_supported": [
-                "ascope",
-                "play"
-            ],
-            "response_types_supported": [
-                "code",
-                "token"
-            ],
+            "scopes_supported": [],
+            "response_types_supported": [],
             "claims_supported": [
-                "aud",
-                "exp",
-                "ext",
-                "iat",
-                "iss",
-                "jti",
-                "nbf",
-                "scp",
-                "sub",
-                "client_id",
-                "ext_provider_id",
-                "company"
+                "aud"
             ],
             "grant_types_supported": [
-                "authorization_code",
-                "refresh_token",
-                "client_credentials"
+                "refresh_token"
             ]
         }"#;
 
