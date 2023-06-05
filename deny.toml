@@ -21,6 +21,11 @@ skip = [
 skip-tree = [
 ]
 
+[sources]
+allow-git = [
+    "https://github.com/EmbarkStudios/jsonwebtoken",
+]
+
 [licenses]
 unlicensed = "deny"
 # We want really high confidence when inferring licenses from text
@@ -34,6 +39,7 @@ exceptions = [
     { allow = ["MPL-2.0"], name = "webpki-roots" },
     { allow = ["ISC"], name = "untrusted" },
     { allow = ["ISC"], name = "webpki" },
+    { allow = ["ISC"], name = "rustls-webpki" },
     { allow = ["ISC"], name = "simple_asn1" },
     { allow = ["ISC", "MIT", "OpenSSL"], name = "ring" },
     { allow = ["Zlib"], name = "tinyvec" },
@@ -61,6 +67,13 @@ license-files = [{ path = "COPYRIGHT", hash = 0x39f8ad31 }]
 
 [[licenses.clarify]]
 name = "webpki"
+expression = "ISC"
+license-files = [
+    { path = "LICENSE", hash = 0x001c7e6c },
+]
+
+[[licenses.clarify]]
+name = "rustls-webpki"
 expression = "ISC"
 license-files = [
     { path = "LICENSE", hash = 0x001c7e6c },

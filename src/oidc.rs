@@ -7,8 +7,8 @@ use std::convert::TryInto;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::form_urlencoded::Serializer;
 
-fn encode_base64(input: String) -> String {
-    general_purpose::STANDARD.encode(input)
+fn base64_encode(input: String) -> String {
+    general_purpose::URL_SAFE_NO_PAD.encode(input)
 }
 
 pub fn authorization_request<ReqUri, RedirectUri>(
@@ -45,7 +45,7 @@ where
 
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = encode_base64(format!(
+            let basic = base64_encode(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -173,7 +173,7 @@ where
     serializer.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = encode_base64(format!(
+            let basic = base64_encode(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -254,7 +254,7 @@ where
     partial.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = encode_base64(format!(
+            let basic = base64_encode(format!(
                 "{}:{}",
                 &auth.client_id, client_credentials.client_secret
             ));
@@ -297,7 +297,7 @@ mod test {
 
         let result = authorization_request(uri, redirect_uri, &auth, &scopes).unwrap();
 
-        let body = str::from_utf8(&result.body()).unwrap();
+        let body = str::from_utf8(result.body()).unwrap();
         assert_eq!(body, "redirect_uri=https%3A%2F%2Fexample.com%2Fredirect&grant_type=authorization_code&response_type=code&scope=openid&client_id=some-client-id");
 
         let auth_header = result
