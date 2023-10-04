@@ -17,6 +17,8 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
+    # jsonwebtoken uses an old version
+    { name = "base64", version = "=0.13.1" },
 ]
 skip-tree = [
 ]
@@ -28,12 +30,9 @@ confidence-threshold = 0.92
 allow = [
     "Apache-2.0",
     "MIT",
-    "BSD-3-Clause",
 ]
 exceptions = [
-    { allow = ["MPL-2.0"], name = "webpki-roots" },
     { allow = ["ISC"], name = "untrusted" },
-    { allow = ["ISC"], name = "webpki" },
     { allow = ["ISC"], name = "simple_asn1" },
     { allow = ["ISC", "MIT", "OpenSSL"], name = "ring" },
     { allow = ["Zlib"], name = "tinyvec" },
