@@ -223,8 +223,7 @@ where
     }
     error
         .map(TokenDataError::JWTDecode)
-        .map(Err)
-        .unwrap_or(Err(TokenDataError::NoJWKs))
+        .map_or(Err(TokenDataError::NoJWKs), Err)
 }
 
 fn try_token_data<CLAIMS>(
@@ -263,8 +262,7 @@ where
     }
     error
         .map(TokenDataError::JWTDecode)
-        .map(Err)
-        .unwrap_or(Err(TokenDataError::NoJWKs))
+        .map_or(Err(TokenDataError::NoJWKs), Err)
 }
 
 fn try_token_rsa_data<CLAIMS>(

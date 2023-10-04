@@ -36,7 +36,7 @@ async fn get_auth_code_input(state: Option<String>) -> (String, Option<String>) 
     (s, state)
 }
 
-/// Example user info struct to deserialize user_info into
+/// Example user info struct to deserialize `user_info` into
 #[derive(serde::Deserialize, Debug)]
 #[allow(dead_code)]
 struct UserInfo {

@@ -1,3 +1,5 @@
+#![allow(clippy::dbg_macro)]
+
 use bytes::Bytes;
 use http::Request;
 use reqwest::Url;
@@ -24,7 +26,7 @@ fn handle_connection(mut stream: TcpStream) -> Option<String> {
     reader.read_line(&mut request).unwrap();
 
     let query_params = request.split_whitespace().nth(1).unwrap();
-    let url = Url::parse(&("http://127.0.0.1:8000".to_string() + query_params)).unwrap();
+    let url = Url::parse(&format!("http://127.0.0.1:8000{query_params}")).unwrap();
 
     stream.write_all(http_status_ok().as_bytes()).unwrap();
     stream.flush().unwrap();
