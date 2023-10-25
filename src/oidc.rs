@@ -1,5 +1,6 @@
 use crate::auth_scheme::{AuthenticationScheme, ClientAuthentication};
 use crate::errors::{Error, RequestError};
+use data_encoding::BASE64;
 use http::header::AUTHORIZATION;
 use http::{header::CONTENT_TYPE, Request, Uri};
 use std::convert::TryInto;
@@ -40,10 +41,9 @@ where
 
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
-                "{}:{}",
-                &auth.client_id, client_credentials.client_secret
-            ));
+            let basic = BASE64.encode(
+                format!("{}:{}", &auth.client_id, client_credentials.client_secret).as_bytes(),
+            );
             request_builder
                 .header(AUTHORIZATION, format!("Basic {}", basic))
                 .body(Vec::from(serializer.finish()))
@@ -168,10 +168,9 @@ where
     serializer.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
-                "{}:{}",
-                &auth.client_id, client_credentials.client_secret
-            ));
+            let basic = BASE64.encode(
+                format!("{}:{}", &auth.client_id, client_credentials.client_secret).as_bytes(),
+            );
             request_builder
                 .header(AUTHORIZATION, format!("Basic {}", basic))
                 .body(Vec::from(serializer.finish()))
@@ -249,10 +248,9 @@ where
     partial.append_pair("client_id", &auth.client_id);
     let body = match &auth.scheme {
         AuthenticationScheme::Basic(client_credentials) => {
-            let basic = base64::encode(format!(
-                "{}:{}",
-                &auth.client_id, client_credentials.client_secret
-            ));
+            let basic = BASE64.encode(
+                format!("{}:{}", &auth.client_id, client_credentials.client_secret).as_bytes(),
+            );
             request_builder
                 .header(AUTHORIZATION, format!("Basic {}", basic))
                 .body(Vec::from(partial.finish()))

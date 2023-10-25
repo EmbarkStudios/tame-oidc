@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 ### Changed
-- Make claims flexible by accepting any user provided DeserializeOwned in functions, 
-that extract claims.
+- Make claims flexible by accepting any user provided DeserializeOwned in functions, that extract claims.
+- [PR#23](https://github.com/EmbarkStudios/tame-oidc/pull/23) replaced `base64` with `data-encoding`
 
 ## [0.5.0] - 2022-04-25
 ### Added
