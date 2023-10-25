@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+## Changed
+- [PR#23](https://github.com/EmbarkStudios/tame-oidc/pull/23) replaced `base64` with `data-encoding`
+- [PR#24](https://github.com/EmbarkStudios/tame-oidc/pull/24) upgraded `ring` from 0.16 -> 0.17.
+
+## [0.6.0] - 2022-09-13
 ### Changed
 - Make claims flexible by accepting any user provided DeserializeOwned in functions, that extract claims.
-- [PR#23](https://github.com/EmbarkStudios/tame-oidc/pull/23) replaced `base64` with `data-encoding`
 
 ## [0.5.0] - 2022-04-25
 ### Added
@@ -48,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial version
 
 <!-- next-url -->
-[Unreleased]: https://github.com/EmbarkStudios/tame-oidc/compare/0.5.0...HEAD
+[Unreleased]: https://github.com/EmbarkStudios/tame-oidc/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/EmbarkStudios/tame-oidc/compare/0.3.0...0.3.1
