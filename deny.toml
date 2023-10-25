@@ -17,8 +17,6 @@ deny = [
     { name = "openssl-sys" },
 ]
 skip = [
-    # jsonwebtoken uses an old version
-    { name = "base64", version = "=0.13.1" },
 ]
 skip-tree = [
 ]
