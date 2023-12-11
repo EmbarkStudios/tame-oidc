@@ -235,6 +235,7 @@ where
 {
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+    validation.validate_aud = false;
 
     decode::<CLAIMS>(
         token,
