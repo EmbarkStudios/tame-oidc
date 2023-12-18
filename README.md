@@ -32,7 +32,7 @@ See example code in `examples/embark.rs`
 
 ## Examples
 
-### [embark](examples/embark.rs)
+### [embark pkce](examples/embark-pkce)
 
 Usage: `cargo run --example embark`
 

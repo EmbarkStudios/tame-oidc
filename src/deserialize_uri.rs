@@ -48,7 +48,6 @@ impl<'de> de::Visitor<'de> for OptUriVisitor {
     {
         Ok(None)
     }
-
 }
 
 pub fn deserialize_opt<'de, D>(de: D) -> Result<Option<Uri>, D::Error>

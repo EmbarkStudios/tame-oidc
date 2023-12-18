@@ -261,11 +261,16 @@ where
                 .append_pair("client_secret", &client_credentials.client_secret)
                 .finish(),
         )),
-        AuthenticationScheme::Pkce(pkce) => request_builder.body(Vec::from(
-            partial
-                .append_pair("code_verifier", &pkce.code_verifier)
-                .finish(),
-        )),
+        AuthenticationScheme::Pkce(pkce) => {
+            if let Some(client_secret) = &pkce.client_secret {
+                partial.append_pair("client_secret", client_secret);
+            }
+            request_builder.body(Vec::from(
+                partial
+                    .append_pair("code_verifier", &pkce.code_verifier)
+                    .finish(),
+            ))
+        }
     }?;
     Ok(body)
 }
