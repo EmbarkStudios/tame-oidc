@@ -21,6 +21,10 @@ path = "src/lib.rs"
 name = "embark-pkce"
 path = "examples/embark-pkce.rs"
 
+[[example]]
+name = "embark-basic"
+path = "examples/embark-basic.rs"
+
 [dependencies]
 data-encoding = "2.4"
 http = "0.2"
