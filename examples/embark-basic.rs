@@ -9,9 +9,7 @@ use std::{
     net::{TcpListener, TcpStream},
     str,
 };
-use tame_oidc::auth_scheme::{
-    AuthenticationScheme, ClientAuthentication, ClientCredentials,
-};
+use tame_oidc::auth_scheme::{AuthenticationScheme, ClientAuthentication, ClientCredentials};
 use tame_oidc::provider::Claims;
 use tame_oidc::{
     oidc::Token,
