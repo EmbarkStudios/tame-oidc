@@ -7,8 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-header -->
-## [Unreleased] - ReleaseDate
-## Changed
+## [x.x.x] - Unreleased
+
+## [0.7.0] - 2023-12-19
+### Changed
+- Change default behaviour back since updating `jsonwebtoken` to `0.9x` to client-based audience validation 
+instead of library audience-validation. IE. The user validates their own `aud`, if wanted.    
+- Make userinfo-endpoint on `Provider` optional as it's `RECOMMENDED` according to the oidc-spec.
+
+### Fixed
+- Fix a bug where secret wasn't passed through if using the `PKCE`-flow with a client-secret
+
+## [0.6.1] - 2023-10-25
+### Changed
 - [PR#23](https://github.com/EmbarkStudios/tame-oidc/pull/23) replaced `base64` with `data-encoding`
 - [PR#24](https://github.com/EmbarkStudios/tame-oidc/pull/24) upgraded `ring` from 0.16 -> 0.17.
 

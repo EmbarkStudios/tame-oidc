@@ -24,6 +24,9 @@ pub enum OidcValidationError {
     #[error("Nonce doesn't match initially provided nonce")]
     NonceMismatch,
 
+    #[error("Provider did not contain a userinfo endpoint")]
+    NoUserEndpoint,
+
     #[error("Sub from user data doesn't match sub from token data")]
     UserMismatch,
 

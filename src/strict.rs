@@ -213,6 +213,7 @@ impl UserInfoStage {
     pub fn generate_fetch_request(&self) -> Result<Request<Vec<u8>>, Error> {
         self.provider
             .user_info_request(&self.token.access_token)
+            .ok_or(Error::OidcValidation(OidcValidationError::NoUserEndpoint))?
             .map_err(|e| e.into())
     }
 

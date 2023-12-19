@@ -19,8 +19,8 @@ pub struct Provider {
     pub token_endpoint: Uri,
     #[serde(with = "crate::deserialize_uri")]
     pub jwks_uri: Uri,
-    #[serde(with = "crate::deserialize_uri")]
-    pub userinfo_endpoint: Uri,
+    #[serde(default, deserialize_with = "crate::deserialize_uri::deserialize_opt")]
+    pub userinfo_endpoint: Option<Uri>,
     pub scopes_supported: Vec<String>,
     pub response_types_supported: Vec<String>,
     pub claims_supported: Vec<String>,
@@ -112,8 +112,13 @@ impl Provider {
         refresh_token_request(&self.token_endpoint, auth, refresh_token)
     }
 
-    pub fn user_info_request(&self, access_token: &str) -> Result<Request<Vec<u8>>, RequestError> {
-        user_info_request(&self.userinfo_endpoint, access_token)
+    pub fn user_info_request(
+        &self,
+        access_token: &str,
+    ) -> Option<Result<Request<Vec<u8>>, RequestError>> {
+        self.userinfo_endpoint
+            .as_ref()
+            .map(|uri| user_info_request(uri, access_token))
     }
 
     pub fn jwks_request(&self) -> Result<Request<Vec<u8>>, RequestError> {
@@ -235,6 +240,7 @@ where
 {
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
+    validation.validate_aud = false;
 
     decode::<CLAIMS>(
         token,

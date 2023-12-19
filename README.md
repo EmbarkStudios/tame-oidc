@@ -32,11 +32,20 @@ See example code in `examples/embark.rs`
 
 ## Examples
 
-### [embark](examples/embark.rs)
+### [embark basic](examples/embark-basic)
 
-Usage: `cargo run --example embark`
+Usage: `cargo run --example embark-basic`
 
-A small example of using `tame-oidc` together with [reqwest](https://github.com/seanmonstar/reqwest).
+A small example of using `tame-oidc` together with [reqwest](https://github.com/seanmonstar/reqwest) using 
+the basic auth flow.
+
+
+### [embark pkce](examples/embark-pkce)
+
+Usage: `cargo run --example embark-pkce`
+
+A small example of using `tame-oidc` together with [reqwest](https://github.com/seanmonstar/reqwest) using the PKCE 
+auth flow.
 
 ## Contributing
 
