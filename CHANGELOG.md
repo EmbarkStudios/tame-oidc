@@ -7,7 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- next-header -->
-## [0.7.0] - Unreleased
+## [x.x.x] - Unreleased
+
+## [0.7.0] - 2023-12-19
 ### Changed
 - Change default behaviour back since updating `jsonwebtoken` to `0.9x` to client-based audience validation 
 instead of library audience-validation. IE. The user validates their own `aud`, if wanted.    
