@@ -28,7 +28,7 @@ fn handle_connection(mut stream: TcpStream) -> Option<String> {
     reader.read_line(&mut request).unwrap();
 
     let query_params = request.split_whitespace().nth(1).unwrap();
-    let url = Url::parse(&format!("http://127.0.0.1:8000{query_params}")).unwrap();
+    let url = Url::parse(&format!("http://localhost:8000{query_params}")).unwrap();
 
     stream.write_all(http_status_ok().as_bytes()).unwrap();
     stream.flush().unwrap();
@@ -95,10 +95,10 @@ async fn main() {
     // Secret is optional in the PKCE flow
     let client_secret = std::env::var("CLIENT_SECRET").ok();
     let client_id = std::env::var("CLIENT_ID").unwrap();
-    let host = "127.0.0.1";
+    let host = "localhost";
     let port = 8000u16;
     // It's very important that this exactly matches where it's provided in other places, protocol and trailing slash all
-    let redirect_uri = format!("http://{host}:{port}/");
+    let redirect_uri = format!("http://{host}:{port}");
 
     // Fetch and instantiate a provider using a `well-known` uri from an issuer
     let request = provider::well_known(&issuer_domain).unwrap();
@@ -117,7 +117,7 @@ response_type=code&\
 client_id={client_id}&\
 redirect_uri={redirect_uri}&\
 state={state_str}&\
-scope=openid+offline",
+scope=openid",
     );
     println!("Authorize at {authorize_url}");
 

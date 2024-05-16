@@ -158,7 +158,9 @@ where
     RedirectUri: TryInto<Uri>,
 {
     let mut serializer = Serializer::new(String::new());
-    serializer.append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string());
+    let mut redir = &mut into_uri(redirect_uri)?.to_string();
+    redir.pop();
+    serializer.append_pair("redirect_uri", redir);
     serializer.append_pair("grant_type", "authorization_code");
     serializer.append_pair("code", auth_code);
     let request_builder = Request::builder()
