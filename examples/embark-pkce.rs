@@ -11,6 +11,8 @@ use std::{
     net::{TcpListener, TcpStream},
     str,
 };
+use std::collections::HashMap;
+use serde_json::Value;
 use tame_oidc::auth_scheme::{AuthenticationScheme, ClientAuthentication, PkceCredentials};
 use tame_oidc::provider::Claims;
 use tame_oidc::{
@@ -117,7 +119,8 @@ response_type=code&\
 client_id={client_id}&\
 redirect_uri={redirect_uri}&\
 state={state_str}&\
-scope=openid",
+access_type=offline&\
+scope=openid+email+profile",
     );
     println!("Authorize at {authorize_url}");
 
@@ -148,7 +151,7 @@ scope=openid",
     let response = http_send(&http_client, request).await;
     let jwks = JWKS::from_response(response).unwrap();
 
-    let token_data = provider::verify_token::<Claims>(&access_token.access_token, &jwks.keys);
+    let token_data = provider::verify_token::<HashMap<String, Value>>(access_token.id_token.as_ref().unwrap(), &jwks.keys);
     dbg!(&token_data);
     dbg!(&access_token);
     let refresh_token = access_token.refresh_token.unwrap();

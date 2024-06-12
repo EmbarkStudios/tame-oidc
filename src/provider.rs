@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::auth_scheme::ClientAuthentication;
 use crate::oidc::{authorization_request, user_info_request, Token};
 use crate::{
@@ -241,6 +242,9 @@ where
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
     validation.validate_aud = false;
+    validation.required_spec_claims = HashSet::new();
+
+    eprintln!("Try: {token:?}");
 
     decode::<CLAIMS>(
         token,

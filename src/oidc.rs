@@ -269,9 +269,16 @@ where
             }
             request_builder.body(Vec::from(
                 partial
-                    .append_pair("code_verifier", &pkce.code_verifier)
+                    .append_pair("access_type", "offline")
                     .finish(),
             ))
+            /*
+            request_builder.body(Vec::from(
+                partial
+                    .finish(),
+            ))
+
+             */
         }
     }?;
     Ok(body)
