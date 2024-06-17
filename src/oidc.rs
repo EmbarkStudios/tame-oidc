@@ -221,7 +221,6 @@ where
     let (parts, body) = response.into_parts();
 
     if !parts.status.is_success() {
-        println!("{:?}", core::str::from_utf8(body.as_ref()));
         return Err(Error::HttpStatus(parts.status));
     }
 
