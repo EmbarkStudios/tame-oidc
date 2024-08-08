@@ -4,6 +4,7 @@ use data_encoding::BASE64;
 use http::header::AUTHORIZATION;
 use http::{header::CONTENT_TYPE, Request, Uri};
 use std::convert::TryInto;
+use std::fmt::Display;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::form_urlencoded::Serializer;
 
@@ -15,14 +16,16 @@ pub fn authorization_request<ReqUri, RedirectUri>(
 ) -> Result<Request<Vec<u8>>, RequestError>
 where
     ReqUri: TryInto<Uri>,
-    RedirectUri: TryInto<Uri>,
+    RedirectUri: TryInto<Uri> + Display,
 {
     let request_builder = Request::builder()
         .method("POST")
         .uri(into_uri(uri)?)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded");
     let mut serializer = Serializer::new(String::new());
-    serializer.append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string());
+    let raw_redirect_uri = redirect_uri.to_string();
+    into_uri(redirect_uri)?;
+    serializer.append_pair("redirect_uri", &raw_redirect_uri);
     serializer.append_pair("grant_type", "authorization_code");
     serializer.append_pair("response_type", "code");
     serializer.append_pair(
@@ -77,7 +80,7 @@ struct TokenExchangeResponse {
     /// A JSON Web Token that contains information about an authentication event
     /// and claims about the authenticated user.
     id_token: Option<String>,
-    /// An opaque refresh token. This is returned if the offline_access scope is
+    /// An opaque refresh token. This is returned if the `offline_access` scope is
     /// granted.
     refresh_token: Option<String>,
 }
@@ -98,7 +101,7 @@ pub struct Token {
     /// A JSON Web Token that contains information about an authentication event
     /// and claims about the authenticated user.
     pub id_token: Option<String>,
-    /// An opaque refresh token. This is returned if the offline_access scope is
+    /// An opaque refresh token. This is returned if the `offline_access` scope is
     /// granted.
     pub refresh_token: Option<String>,
 }
@@ -155,10 +158,12 @@ pub fn exchange_token_request<ReqUri, RedirectUri>(
 ) -> Result<Request<Vec<u8>>, RequestError>
 where
     ReqUri: TryInto<Uri>,
-    RedirectUri: TryInto<Uri>,
+    RedirectUri: TryInto<Uri> + Display,
 {
     let mut serializer = Serializer::new(String::new());
-    serializer.append_pair("redirect_uri", &into_uri(redirect_uri)?.to_string());
+    let raw_redirect_uri = redirect_uri.to_string();
+    into_uri(redirect_uri)?;
+    serializer.append_pair("redirect_uri", &raw_redirect_uri);
     serializer.append_pair("grant_type", "authorization_code");
     serializer.append_pair("code", auth_code);
     let request_builder = Request::builder()
@@ -265,11 +270,7 @@ where
             if let Some(client_secret) = &pkce.client_secret {
                 partial.append_pair("client_secret", client_secret);
             }
-            request_builder.body(Vec::from(
-                partial
-                    .append_pair("code_verifier", &pkce.code_verifier)
-                    .finish(),
-            ))
+            request_builder.body(Vec::from(partial.finish()))
         }
     }?;
     Ok(body)

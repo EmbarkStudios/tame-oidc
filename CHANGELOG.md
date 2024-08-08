@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [x.x.x] - Unreleased
+### Changed
 - Update `http` to 1.x
+
+### Fixed
+- Add `Display` trait-bound to `redirect_uri`s so that they can be passed as-is to the request payload.
+Since these `URI`s are used for an integrity-check, rather than a request-destination, `IntoUri`'s manipulation
+(adding a slash to the end), can make `redirect_uri`'s that should be valid invalid.
+- Don't send a `code_verifier` when refreshing tokens
 
 ## [0.7.0] - 2023-12-19
 ### Changed

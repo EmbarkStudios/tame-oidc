@@ -9,6 +9,7 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
+use std::fmt::Display;
 
 #[derive(Deserialize, Debug)]
 pub struct Provider {
@@ -47,7 +48,7 @@ impl Provider {
         scopes: &Option<Vec<String>>,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
-        RedirectUri: TryInto<Uri>,
+        RedirectUri: TryInto<Uri> + Display,
     {
         authorization_request(&self.authorization_endpoint, redirect_uri, auth, scopes)
     }
@@ -59,7 +60,7 @@ impl Provider {
         auth_code: &str,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
-        RedirectUri: TryInto<Uri>,
+        RedirectUri: TryInto<Uri> + Display,
     {
         exchange_token_request(&self.token_endpoint, redirect_uri, auth, auth_code)
     }
