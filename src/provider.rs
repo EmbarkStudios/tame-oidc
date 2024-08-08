@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use crate::auth_scheme::ClientAuthentication;
 use crate::oidc::{authorization_request, user_info_request, Token};
 use crate::{
@@ -10,6 +9,7 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
+use std::fmt::Display;
 
 #[derive(Deserialize, Debug)]
 pub struct Provider {
@@ -48,7 +48,7 @@ impl Provider {
         scopes: &Option<Vec<String>>,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
-        RedirectUri: TryInto<Uri>,
+        RedirectUri: TryInto<Uri> + Display,
     {
         authorization_request(&self.authorization_endpoint, redirect_uri, auth, scopes)
     }
@@ -60,7 +60,7 @@ impl Provider {
         auth_code: &str,
     ) -> Result<Request<Vec<u8>>, RequestError>
     where
-        RedirectUri: TryInto<Uri>,
+        RedirectUri: TryInto<Uri> + Display,
     {
         exchange_token_request(&self.token_endpoint, redirect_uri, auth, auth_code)
     }
@@ -242,9 +242,6 @@ where
     let mut validation = Validation::default();
     validation.algorithms = vec![Algorithm::RS256, Algorithm::RS384, Algorithm::RS512];
     validation.validate_aud = false;
-    validation.required_spec_claims = HashSet::new();
-
-    eprintln!("Try: {token:?}");
 
     decode::<CLAIMS>(
         token,

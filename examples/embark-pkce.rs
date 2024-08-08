@@ -5,16 +5,15 @@ use http::Request;
 use rand::rngs::ThreadRng;
 use rand::RngCore;
 use reqwest::Url;
+use serde_json::Value;
+use std::collections::HashMap;
 use std::{
     convert::TryInto,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
     str,
 };
-use std::collections::HashMap;
-use serde_json::Value;
 use tame_oidc::auth_scheme::{AuthenticationScheme, ClientAuthentication, PkceCredentials};
-use tame_oidc::provider::Claims;
 use tame_oidc::{
     oidc::Token,
     provider::{self, Provider, JWKS},
@@ -151,7 +150,10 @@ scope=openid+email+profile",
     let response = http_send(&http_client, request).await;
     let jwks = JWKS::from_response(response).unwrap();
 
-    let token_data = provider::verify_token::<HashMap<String, Value>>(access_token.id_token.as_ref().unwrap(), &jwks.keys);
+    let token_data = provider::verify_token::<HashMap<String, Value>>(
+        access_token.id_token.as_ref().unwrap(),
+        &jwks.keys,
+    );
     dbg!(&token_data);
     dbg!(&access_token);
     let refresh_token = access_token.refresh_token.unwrap();
